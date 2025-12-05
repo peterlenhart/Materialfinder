@@ -249,7 +249,7 @@
   <script>
     const STORAGE_KEY = "materialFinderDataV2";
 
-    // feste Buttons (K510 entfernt)
+    // feste Buttons (ohne K510)
     const MATERIAL_BUTTONS = [
       "W300",
       "K110",
@@ -267,6 +267,7 @@
     let currentDims = [];       // alle möglichen Maße (Zahlen) für den gewählten Button
     let selectedDim1 = null;
     let selectedDim2 = null;
+    let hasSearched = false;    // wurde unter diesem Button schon gesucht?
 
     const statusTextEl = document.getElementById("statusText");
     const materialsContainer = document.getElementById("materialsContainer");
@@ -323,7 +324,6 @@
     function hasDurchmesser(str) {
       if (!str) return false;
       const s = String(str);
-      // typische Kennzeichen: Ø, ⌀ oder ausgeschrieben "Durchmesser"
       if (/[Øø⌀]/.test(s)) return true;
       if (/durchmesser/i.test(s)) return true;
       return false;
@@ -339,7 +339,6 @@
         return null;
       }
 
-      // Erstes Muster: Zahl [x|*] Zahl
       const regex = /(\d+)\s*[xX*]\s*(\d+)/;
       const match = s.match(regex);
       if (!match) return null;
@@ -371,6 +370,7 @@
       currentDims = [];
       selectedDim1 = null;
       selectedDim2 = null;
+      hasSearched = false;
       dimensionArea.style.display = "none";
       clearResultArea();
 
@@ -390,14 +390,14 @@
 
       currentPairs = [];
       const dimSet = new Set();
+      hasSearched = false; // neuer Werkstoff => Paarlogik wieder aktiv
 
-      // Alle Zeilen, deren Materialbezeichnung den Button-Namen enthält
       dataRows.forEach(row => {
         const mb = row["Materialbezeichnung"];
         if (!mb) return;
 
         const mbStr = String(mb);
-        // Case-insensitive: Button-Name muss vorkommen
+
         if (!mbStr.toLowerCase().includes(name.toLowerCase())) {
           return;
         }
@@ -454,7 +454,26 @@
       }
     }
 
+    // NEU: andere Auswahl beim Start einer neuen Eingabe zurücksetzen
+    function resetOtherSelect(which) {
+      if (!hasSearched) return; // nur nach der ersten Suche dieses Verhalten
+
+      if (which === 1) {
+        selectedDim2 = null;
+        fillSelect(select2, "Maß 2", currentDims, null);
+      } else {
+        selectedDim1 = null;
+        fillSelect(select1, "Maß 1", currentDims, null);
+      }
+    }
+
     function computeAllowedDims(fixedDim) {
+      // Nach einer Suche: kein Paarzwang mehr, alle Maße sind offen
+      if (hasSearched) {
+        return currentDims.slice();
+      }
+
+      // Vor der ersten Suche: Paarlogik aktiv
       if (!fixedDim) {
         return currentDims.slice();
       }
@@ -491,7 +510,6 @@
       const lpRaw = row["Lagerplatz"];
       const lpStr = lpRaw != null ? String(lpRaw).trim() : "";
 
-      // Fall B: Lagerplatz leer -> Random
       if (!lpStr) {
         const n1 = Math.floor(Math.random() * 27) + 1; // 1-27
         const n2 = Math.floor(Math.random() * 4);      // 0-3
@@ -508,7 +526,6 @@
         return { number, regalText };
       }
 
-      // Fall A: Lagerplatz vorhanden
       const parts = lpStr.split(".");
       const feld = parts[0] || "-";
       const fach = parts[1] || "";
@@ -537,11 +554,9 @@
 
         const { number, regalText } = getLagerplatzInfo(row);
 
-        // Wrapper: Karte + Text darunter
         const wrapper = document.createElement("div");
         wrapper.className = "result-wrapper";
 
-        // Blaue Karte
         const card = document.createElement("div");
         card.className = "result-card";
 
@@ -556,7 +571,6 @@
         card.appendChild(matDiv);
         card.appendChild(numDiv);
 
-        // Text UNTER der Karte (schwarz)
         const fachDiv = document.createElement("div");
         fachDiv.className = "result-fach";
         fachDiv.textContent = regalText;
@@ -622,10 +636,10 @@
 
       if (!v1 || !v2) {
         showNoResult("Bitte zwei Maße wählen.");
+        hasSearched = true;
         return;
       }
 
-      // alle Datensätze mit diesen beiden Maßen suchen (reihenfolgeunabhängig)
       const matches = [];
       for (const p of currentPairs) {
         if (
@@ -641,7 +655,8 @@
       } else {
         showNoResult("Material in diesen Abmessungen nicht vorhanden.");
       }
-      // Dropdown-Auswahl bleibt erhalten
+
+      hasSearched = true;
     }
 
     // --- Excel / LocalStorage ---
@@ -662,14 +677,11 @@
           const sheet = workbook.Sheets[workbook.SheetNames[0]];
           const json = XLSX.utils.sheet_to_json(sheet, { defval: "" });
 
-          // Erwartete Spaltennamen:
-          // "Material", "Materialbezeichnung", "Lagerplatz"
           dataRows = json;
           usingExcel = true;
           updateStatusText();
           buildMaterialButtons();
 
-          // in localStorage sichern
           localStorage.setItem(STORAGE_KEY, JSON.stringify(dataRows));
         } catch (err) {
           console.error(err);
@@ -687,7 +699,13 @@
     select2.addEventListener("change", () => onSelectChange(2));
     document.getElementById("searchBtn").addEventListener("click", onSearch);
 
-    // --- Init: versuchen, Daten aus localStorage zu holen ---
+    // NEU: Beim Klick/Fokus auf ein Feld das andere neutralisieren (nach erster Suche)
+    ["focus", "mousedown", "touchstart"].forEach(evtName => {
+      select1.addEventListener(evtName, () => resetOtherSelect(1));
+      select2.addEventListener(evtName, () => resetOtherSelect(2));
+    });
+
+    // --- Init ---
     (function init() {
       try {
         const saved = localStorage.getItem(STORAGE_KEY);
