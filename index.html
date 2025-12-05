@@ -249,12 +249,11 @@
   <script>
     const STORAGE_KEY = "materialFinderDataV2";
 
-    // feste Buttons
+    // feste Buttons (K510 entfernt)
     const MATERIAL_BUTTONS = [
       "W300",
       "K110",
       "K945",
-      "K510",
       "K490",
       "Tenasteel",
       "Toolox"
@@ -642,7 +641,7 @@
       } else {
         showNoResult("Material in diesen Abmessungen nicht vorhanden.");
       }
-      // **Dropdown-Auswahl bleibt jetzt erhalten – nichts wird zurückgesetzt**
+      // Dropdown-Auswahl bleibt erhalten
     }
 
     // --- Excel / LocalStorage ---
