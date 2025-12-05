@@ -90,7 +90,7 @@
 
     .dimension-area {
       margin-top: 8px;
-      display: none; /* erst zeigen, wenn Button gewählt */
+      display: none; 
     }
 
     .dim-row-selects {
@@ -112,7 +112,6 @@
       border: 1px solid #cdd4e0;
       background: #ffffff;
       appearance: none;
-      -webkit-appearance: none;
     }
 
     .dim-picker::after {
@@ -141,22 +140,13 @@
     .result-area {
       margin-top: 24px;
       display: none;
-      flex-wrap: wrap;
-      gap: 16px;
-      justify-content: center;
-    }
-
-    /* Wrapper um Karte + Text darunter */
-    .result-wrapper {
-      display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 4px;
+      gap: 10px;
     }
 
-    /* Blaue Karte */
     .result-card {
-      background: #0050a0; /* Blau */
+      background: #0050a0;
       border-radius: 24px;
       width: min(40vh, 40vw);
       height: min(40vh, 40vw);
@@ -167,19 +157,16 @@
       align-items: center;
       justify-content: center;
       gap: 12px;
-      padding: 24px 16px 20px; /* oben etwas mehr Platz für die Kapsel */
-      color: #fff;
-      text-align: center;
+      padding: 16px;
     }
 
     .result-matnr {
       background: #fff;
-      color: #000;
       border-radius: 16px;
       padding: 6px 16px;
       font-size: 1.5rem;
       letter-spacing: 0.2rem;
-      font-weight: bold; /* Kurz-MatNr fett */
+      font-weight: bold;
     }
 
     .result-number {
@@ -187,28 +174,23 @@
       font-weight: bold;
       font-size: 3.4rem;
       line-height: 1;
+      margin-top: 12px;
     }
 
-    /* Text unterhalb des Quadrats */
-    .result-fach {
-      font-size: 1.2rem;
+    .result-regal {
+      font-size: 1.4rem;
       font-weight: 600;
-      color: #000;
+      margin-top: 4px;
     }
 
     .result-info {
-      font-size: 0.85rem;
+      font-size: 0.9rem;
       color: #000;
       text-align: center;
     }
-
-    @media (min-width: 768px) {
-      .app {
-        max-width: 640px;
-      }
-    }
   </style>
 </head>
+
 <body>
   <div class="app">
     <h1>Material Finder</h1>
@@ -225,9 +207,7 @@
 
     <input type="file" id="excelInput" accept=".xlsx,.xls" style="display:none" />
 
-    <div class="materials" id="materialsContainer">
-      <!-- Buttons werden per JS aus fixer Liste erzeugt -->
-    </div>
+    <div class="materials" id="materialsContainer"></div>
 
     <div class="dimension-area" id="dimensionArea">
       <div class="dim-row-selects">
@@ -242,476 +222,295 @@
     </div>
 
     <div class="result-area" id="resultArea">
-      <!-- Ergebnis-Karten werden per JS erzeugt -->
+      <div class="result-card" id="resultCard"></div>
     </div>
   </div>
 
-  <script>
-    const STORAGE_KEY = "materialFinderDataV2";
-
-    // feste Buttons
-    const MATERIAL_BUTTONS = [
-      "W300",
-      "K110",
-      "K945",
-      "K510",
-      "K490",
-      "Tenasteel",
-      "Toolox"
-    ];
-
-    let dataRows = [];          // Excel- oder Demo-Daten
-    let usingExcel = false;
-    let selectedButton = null;  // Name des gewählten Materials (z.B. "K490")
-
-    let currentPairs = [];      // {row, height, width}
-    let currentDims = [];       // alle möglichen Maße (Zahlen) für den gewählten Button
-    let selectedDim1 = null;
-    let selectedDim2 = null;
-
-    const statusTextEl = document.getElementById("statusText");
-    const materialsContainer = document.getElementById("materialsContainer");
-    const dimensionArea = document.getElementById("dimensionArea");
-    const select1 = document.getElementById("select1");
-    const select2 = document.getElementById("select2");
-    const resultArea = document.getElementById("resultArea");
-
-    // Demo-Daten im neuen Format
-    const demoData = [
-      {
-        Material: "7900001001",
-        Materialbezeichnung: "Böhler K110 MICROCLEAN 10x40x1000MM",
-        Lagerplatz: "5.1"
-      },
-      {
-        Material: "7900001002",
-        Materialbezeichnung: "Böhler K110 MICROCLEAN 20x50x1000MM",
-        Lagerplatz: "6.2"
-      },
-      {
-        Material: "7900001003",
-        Materialbezeichnung: "Böhler K490 MICROCLEAN 20x20x1000mm",
-        Lagerplatz: "7.3"
-      },
-      {
-        Material: "7900002001",
-        Materialbezeichnung: "Böhler W300 8x20x1000MM",
-        Lagerplatz: "1.3"
-      },
-      {
-        Material: "7900002002",
-        Materialbezeichnung: "Böhler W300 10x20x1000MM",
-        Lagerplatz: ""
-      },
-      {
-        Material: "7900003001",
-        Materialbezeichnung: "TOOLOX 44 12x50x1000mm",
-        Lagerplatz: "3.1"
-      }
-    ];
-
-    // --- Hilfsfunktionen ---
-
-    function updateStatusText() {
-      if (usingExcel) {
-        statusTextEl.textContent = `Excel-Daten aktiv: ${dataRows.length} Datensätze.`;
-      } else {
-        statusTextEl.textContent = "Keine Excel-Daten importiert (Demo-Fallback aktiv).";
-      }
-    }
-
-    // Prüfen, ob eine Zeile eine Durchmesserangabe enthält -> dann ignorieren
-    function hasDurchmesser(str) {
-      if (!str) return false;
-      const s = String(str);
-      // typische Kennzeichen: Ø, ⌀ oder ausgeschrieben "Durchmesser"
-      if (/[Øø⌀]/.test(s)) return true;
-      if (/durchmesser/i.test(s)) return true;
-      return false;
-    }
-
-    // erstes Zahlen-x/*-Zahlen-Paar in Materialbezeichnung finden
-    function extractFirstDimPair(matBez) {
-      if (!matBez) return null;
-      const s = String(matBez);
-
-      // Zeilen mit Durchmesserangaben ignorieren
-      if (hasDurchmesser(s)) {
-        return null;
-      }
-
-      // Erstes Muster: Zahl [x|*] Zahl
-      const regex = /(\d+)\s*[xX*]\s*(\d+)/;
-      const match = s.match(regex);
-      if (!match) return null;
-
-      const a = Number(match[1]);
-      const b = Number(match[2]);
-      if (isNaN(a) || isNaN(b)) return null;
-
-      return {
-        height: Math.min(a, b),
-        width: Math.max(a, b)
-      };
-    }
-
-    function setActiveButton(btn) {
-      document.querySelectorAll(".mat-btn").forEach(b => b.classList.remove("active"));
-      if (btn) btn.classList.add("active");
-    }
-
-    function clearResultArea() {
-      resultArea.innerHTML = "";
-      resultArea.style.display = "none";
-    }
-
-    function buildMaterialButtons() {
-      materialsContainer.innerHTML = "";
-      selectedButton = null;
-      currentPairs = [];
-      currentDims = [];
-      selectedDim1 = null;
-      selectedDim2 = null;
-      dimensionArea.style.display = "none";
-      clearResultArea();
-
-      MATERIAL_BUTTONS.forEach(name => {
-        const btn = document.createElement("button");
-        btn.className = "mat-btn";
-        btn.dataset.materialName = name;
-        btn.textContent = name;
-        btn.addEventListener("click", () => onMaterialButtonClick(name, btn));
-        materialsContainer.appendChild(btn);
-      });
-    }
-
-    function onMaterialButtonClick(name, btnElement) {
-      selectedButton = name;
-      setActiveButton(btnElement);
-
-      currentPairs = [];
-      const dimSet = new Set();
-
-      // Alle Zeilen, deren Materialbezeichnung den Button-Namen enthält
-      dataRows.forEach(row => {
-        const mb = row["Materialbezeichnung"];
-        if (!mb) return;
-
-        const mbStr = String(mb);
-        // Case-insensitive: Button-Name muss vorkommen
-        if (!mbStr.toLowerCase().includes(name.toLowerCase())) {
-          return;
-        }
-
-        const dims = extractFirstDimPair(mbStr);
-        if (!dims) return;
-
-        currentPairs.push({
-          row,
-          height: dims.height,
-          width: dims.width
-        });
-
-        dimSet.add(dims.height);
-        dimSet.add(dims.width);
-      });
-
-      currentDims = Array.from(dimSet).sort((a, b) => a - b);
-      selectedDim1 = null;
-      selectedDim2 = null;
-
-      fillSelect(select1, "Maß 1", currentDims, null);
-      fillSelect(select2, "Maß 2", currentDims, null);
-
-      if (currentDims.length > 0) {
-        dimensionArea.style.display = "block";
-      } else {
-        dimensionArea.style.display = "none";
-      }
-
-      clearResultArea();
-    }
-
-    function fillSelect(selectEl, placeholderLabel, dims, keepValue) {
-      const prev = keepValue;
-      selectEl.innerHTML = "";
-
-      const ph = document.createElement("option");
-      ph.value = "";
-      ph.textContent = placeholderLabel;
-      selectEl.appendChild(ph);
-
-      dims.forEach(v => {
-        const opt = document.createElement("option");
-        opt.value = v;
-        opt.textContent = v;
-        selectEl.appendChild(opt);
-      });
-
-      if (prev != null && dims.includes(prev)) {
-        selectEl.value = String(prev);
-      } else {
-        selectEl.value = "";
-      }
-    }
-
-    function computeAllowedDims(fixedDim) {
-      if (!fixedDim) {
-        return currentDims.slice();
-      }
-      const set = new Set();
-      currentPairs.forEach(p => {
-        if (p.height === fixedDim) set.add(p.width);
-        if (p.width === fixedDim) set.add(p.height);
-      });
-      return Array.from(set).sort((a, b) => a - b);
-    }
-
-    function onSelectChange(fromSelect) {
-      const val1 = select1.value ? Number(select1.value) : null;
-      const val2 = select2.value ? Number(select2.value) : null;
-
-      selectedDim1 = val1;
-      selectedDim2 = val2;
-
-      if (fromSelect === 1) {
-        const allowedFor2 = computeAllowedDims(selectedDim1);
-        const keep = allowedFor2.includes(selectedDim2) ? selectedDim2 : null;
-        if (!keep) selectedDim2 = null;
-        fillSelect(select2, "Maß 2", allowedFor2, keep);
-      } else if (fromSelect === 2) {
-        const allowedFor1 = computeAllowedDims(selectedDim2);
-        const keep = allowedFor1.includes(selectedDim1) ? selectedDim1 : null;
-        if (!keep) selectedDim1 = null;
-        fillSelect(select1, "Maß 1", allowedFor1, keep);
-      }
-    }
-
-    // Lagerplatz in Anzeigeinformationen umwandeln
-    function getLagerplatzInfo(row) {
-      const lpRaw = row["Lagerplatz"];
-      const lpStr = lpRaw != null ? String(lpRaw).trim() : "";
-
-      // Fall B: Lagerplatz leer -> Random
-      if (!lpStr) {
-        const n1 = Math.floor(Math.random() * 27) + 1; // 1-27
-        const n2 = Math.floor(Math.random() * 4);      // 0-3
-
-        const number = n1;
-        let regalText;
-
-        if (n2 === 3) {
-          regalText = "Palette";
-        } else {
-          regalText = `Fach ${n2}`;
-        }
-
-        return { number, regalText };
-      }
-
-      // Fall A: Lagerplatz vorhanden
-      const parts = lpStr.split(".");
-      const feld = parts[0] || "-";
-      const fach = parts[1] || "";
-
-      const number = feld || "-";
-      let regalText;
-
-      if (fach === "3") {
-        regalText = "Palette";
-      } else if (fach === "") {
-        regalText = "Fach -";
-      } else {
-        regalText = `Fach ${fach}`;
-      }
-
-      return { number, regalText };
-    }
-
-    // Ergebnis-Karten für eine Liste von Zeilen anzeigen
-    function showResults(rows) {
-      resultArea.innerHTML = "";
-
-      rows.forEach(row => {
-        const matFull = row["Material"] != null ? String(row["Material"]).trim() : "";
-        const matShort = matFull ? matFull.slice(-4) : "----";
-
-        const { number, regalText } = getLagerplatzInfo(row);
-
-        // Wrapper: Karte + Text darunter
-        const wrapper = document.createElement("div");
-        wrapper.className = "result-wrapper";
-
-        // Blaue Karte
-        const card = document.createElement("div");
-        card.className = "result-card";
-
-        const matDiv = document.createElement("div");
-        matDiv.className = "result-matnr";
-        matDiv.textContent = matShort || "----";
-
-        const numDiv = document.createElement("div");
-        numDiv.className = "result-number";
-        numDiv.textContent = number || "-";
-
-        card.appendChild(matDiv);
-        card.appendChild(numDiv);
-
-        // Text UNTER der Karte (schwarz)
-        const fachDiv = document.createElement("div");
-        fachDiv.className = "result-fach";
-        fachDiv.textContent = regalText;
-
-        const infoDiv = document.createElement("div");
-        infoDiv.className = "result-info";
-        infoDiv.textContent = matFull
-          ? `Materialnummer: ${matFull}`
-          : "Keine Materialnummer vorhanden";
-
-        wrapper.appendChild(card);
-        wrapper.appendChild(fachDiv);
-        wrapper.appendChild(infoDiv);
-
-        resultArea.appendChild(wrapper);
-      });
-
-      resultArea.style.display = "flex";
-    }
-
-    // Karte für "kein Ergebnis" anzeigen
-    function showNoResult(message) {
-      resultArea.innerHTML = "";
-
-      const wrapper = document.createElement("div");
-      wrapper.className = "result-wrapper";
-
-      const card = document.createElement("div");
-      card.className = "result-card";
-
-      const matDiv = document.createElement("div");
-      matDiv.className = "result-matnr";
-      matDiv.textContent = "----";
-
-      const numDiv = document.createElement("div");
-      numDiv.className = "result-number";
-      numDiv.textContent = "-";
-
-      card.appendChild(matDiv);
-      card.appendChild(numDiv);
-
-      const fachDiv = document.createElement("div");
-      fachDiv.className = "result-fach";
-      fachDiv.textContent = "Material nicht vorhanden";
-
-      const infoDiv = document.createElement("div");
-      infoDiv.className = "result-info";
-      infoDiv.textContent = message || "";
-
-      wrapper.appendChild(card);
-      wrapper.appendChild(fachDiv);
-      wrapper.appendChild(infoDiv);
-
-      resultArea.appendChild(wrapper);
-      resultArea.style.display = "flex";
-    }
-
-    function onSearch() {
-      if (!selectedButton) return;
-
-      const v1 = select1.value ? Number(select1.value) : null;
-      const v2 = select2.value ? Number(select2.value) : null;
-
-      if (!v1 || !v2) {
-        showNoResult("Bitte zwei Maße wählen.");
-        return;
-      }
-
-      // alle Datensätze mit diesen beiden Maßen suchen (reihenfolgeunabhängig)
-      const matches = [];
-      for (const p of currentPairs) {
-        if (
-          (p.height === v1 && p.width === v2) ||
-          (p.height === v2 && p.width === v1)
-        ) {
-          matches.push(p.row);
-        }
-      }
-
-      if (matches.length > 0) {
-        showResults(matches);
-      } else {
-        showNoResult("Material in diesen Abmessungen nicht vorhanden.");
-      }
-
-      // nach dem Ergebnis die Auswahl zurücksetzen
-      selectedDim1 = null;
-      selectedDim2 = null;
-      fillSelect(select1, "Maß 1", currentDims, null);
-      fillSelect(select2, "Maß 2", currentDims, null);
-    }
-
-    // --- Excel / LocalStorage ---
-
-    document.getElementById("excelBtn").addEventListener("click", () => {
-      document.getElementById("excelInput").click();
+<script>
+const STORAGE_KEY = "materialFinderDataV1";
+
+let dataRows = [];
+let usingExcel = false;
+let selectedWerkstoff = null;
+
+let currentPairs = [];
+let currentDims = [];
+let selectedDim1 = null;
+let selectedDim2 = null;
+
+const statusTextEl = document.getElementById("statusText");
+const materialsContainer = document.getElementById("materialsContainer");
+const dimensionArea = document.getElementById("dimensionArea");
+const select1 = document.getElementById("select1");
+const select2 = document.getElementById("select2");
+const resultArea = document.getElementById("resultArea");
+const resultCard = document.getElementById("resultCard");
+
+// ---------------------------------------------
+// PARSER
+// ---------------------------------------------
+
+function parseDimensions(str) {
+  if (!str) return null;
+
+  const cleaned = str.replace(/,/g, ".").toUpperCase();
+  const match = cleaned.match(/(\d+)\s*[X*]\s*(\d+)/);
+
+  if (!match) return null;
+
+  return {
+    height: Math.min(Number(match[1]), Number(match[2])),
+    width: Math.max(Number(match[1]), Number(match[2]))
+  };
+}
+
+function parseLag(str) {
+  if (!str) return { feld: "-", regal: "-" };
+  const p = String(str).split(".");
+  return {
+    feld: p[0] || "-",
+    regal: p[1] || "-"
+  };
+}
+
+// ---------------------------------------------
+// UI AUFBAU
+// ---------------------------------------------
+
+function buildMaterialButtons() {
+  materialsContainer.innerHTML = "";
+
+  const fixedButtons = ["W300", "K110", "K945", "K510", "K490", "Tenasteel", "Toolox"];
+
+  fixedButtons.forEach(w => {
+    const btn = document.createElement("button");
+    btn.className = "mat-btn";
+    btn.textContent = w;
+    btn.dataset.werkstoff = w;
+    btn.addEventListener("click", () => onWerkstoffClick(w, btn));
+    materialsContainer.appendChild(btn);
+  });
+}
+
+function setActiveButton(btn) {
+  document.querySelectorAll(".mat-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+}
+
+function onWerkstoffClick(werkstoff, btnElement) {
+  selectedWerkstoff = werkstoff;
+  setActiveButton(btnElement);
+
+  currentPairs = [];
+  const dimSet = new Set();
+
+  dataRows.forEach(r => {
+    const label = String(r.Materialbezeichnung || "").toUpperCase();
+    if (!label.includes(werkstoff.toUpperCase())) return;
+    if (label.includes("Ø") || label.includes("DURCHMESSER")) return;
+
+    const dims = parseDimensions(label);
+    if (!dims) return;
+
+    currentPairs.push({
+      row: r,
+      height: dims.height,
+      width: dims.width
     });
 
-    document.getElementById("excelInput").addEventListener("change", (evt) => {
-      const file = evt.target.files[0];
-      if (!file) return;
+    dimSet.add(dims.height);
+    dimSet.add(dims.width);
+  });
 
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: "array" });
-          const sheet = workbook.Sheets[workbook.SheetNames[0]];
-          const json = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+  currentDims = Array.from(dimSet).sort((a, b) => a - b);
+  selectedDim1 = null;
+  selectedDim2 = null;
 
-          // Erwartete Spaltennamen:
-          // "Material", "Materialbezeichnung", "Lagerplatz"
-          dataRows = json;
-          usingExcel = true;
-          updateStatusText();
-          buildMaterialButtons();
+  fillSelect(select1, "Maß 1", currentDims, null);
+  fillSelect(select2, "Maß 2", currentDims, null);
 
-          // in localStorage sichern
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(dataRows));
-        } catch (err) {
-          console.error(err);
-          usingExcel = false;
-          dataRows = demoData.slice();
-          updateStatusText();
-          buildMaterialButtons();
-        }
-      };
-      reader.readAsArrayBuffer(file);
-    });
+  dimensionArea.style.display = currentDims.length ? "block" : "none";
 
-    // --- Event-Handler für Maße & Suche ---
-    select1.addEventListener("change", () => onSelectChange(1));
-    select2.addEventListener("change", () => onSelectChange(2));
-    document.getElementById("searchBtn").addEventListener("click", onSearch);
+  resultArea.style.display = "none";
+}
 
-    // --- Init: versuchen, Daten aus localStorage zu holen ---
-    (function init() {
-      try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-          dataRows = JSON.parse(saved);
-          usingExcel = true;
-        } else {
-          dataRows = demoData.slice();
-          usingExcel = false;
-        }
-      } catch (e) {
-        dataRows = demoData.slice();
-        usingExcel = false;
-      }
+function fillSelect(selectEl, placeholder, dims, keepValue) {
+  const prev = keepValue;
+  selectEl.innerHTML = "";
 
-      updateStatusText();
+  const ph = document.createElement("option");
+  ph.value = "";
+  ph.textContent = placeholder;
+  selectEl.appendChild(ph);
+
+  dims.forEach(v => {
+    const opt = document.createElement("option");
+    opt.value = v;
+    opt.textContent = v;
+    selectEl.appendChild(opt);
+  });
+
+  if (prev != null && dims.includes(prev)) {
+    selectEl.value = String(prev);
+  }
+}
+
+function computeAllowedDims(fixedDim) {
+  if (!fixedDim) return currentDims.slice();
+
+  const set = new Set();
+  currentPairs.forEach(p => {
+    if (p.height === fixedDim) set.add(p.width);
+    if (p.width === fixedDim) set.add(p.height);
+  });
+  return Array.from(set).sort((a, b) => a - b);
+}
+
+function onSelectChange(src) {
+  const val1 = select1.value ? Number(select1.value) : null;
+  const val2 = select2.value ? Number(select2.value) : null;
+
+  selectedDim1 = val1;
+  selectedDim2 = val2;
+
+  if (src === 1) {
+    const allowed = computeAllowedDims(selectedDim1);
+    const keep = allowed.includes(selectedDim2) ? selectedDim2 : null;
+    fillSelect(select2, "Maß 2", allowed, keep);
+  } else {
+    const allowed = computeAllowedDims(selectedDim2);
+    const keep = allowed.includes(selectedDim1) ? selectedDim1 : null;
+    fillSelect(select1, "Maß 1", allowed, keep);
+  }
+}
+
+// ---------------------------------------------
+// ERGEBNIS
+// ---------------------------------------------
+
+function showResult(list) {
+  resultCard.innerHTML = "";
+
+  list.forEach(item => {
+    const row = item.row;
+
+    const matFull = String(row.Material || "").trim();
+    const matShort = matFull.slice(-4);
+
+    let { feld, regal } = parseLag(row.Lagerplatz);
+
+    let big = feld;
+    let small = regal;
+
+    if (!row.Lagerplatz) {
+      big = Math.floor(Math.random() * 27) + 1;
+      const r = Math.floor(Math.random() * 4);
+      small = r === 3 ? "Palette" : `Fach ${r}`;
+    } else {
+      small = regal === "3" ? "Palette" : `Fach ${regal}`;
+    }
+
+    const card = document.createElement("div");
+
+    card.style.display = "flex";
+    card.style.flexDirection = "column";
+    card.style.alignItems = "center";
+    card.style.justifyContent = "center";
+    card.style.marginBottom = "20px";
+
+    card.innerHTML = `
+      <div class="result-card">
+        <div class="result-matnr">${matShort}</div>
+        <div class="result-number">${big}</div>
+      </div>
+      <div class="result-regal">${small}</div>
+      <div class="result-info">${matFull}</div>
+    `;
+
+    resultCard.appendChild(card);
+  });
+
+  resultArea.style.display = "flex";
+}
+
+function showNoResult(message) {
+  resultCard.innerHTML = `
+    <div class="result-card">
+      <div class="result-matnr">----</div>
+      <div class="result-number">-</div>
+    </div>
+    <div class="result-regal">Material nicht vorhanden</div>
+    <div class="result-info">${message || ""}</div>
+  `;
+  resultArea.style.display = "flex";
+}
+
+// ---------------------------------------------
+// SUCHE
+// ---------------------------------------------
+
+function onSearch() {
+  if (!selectedWerkstoff) return;
+
+  const v1 = select1.value ? Number(select1.value) : null;
+  const v2 = select2.value ? Number(select2.value) : null;
+
+  if (!v1 || !v2) {
+    showNoResult("Bitte zwei Maße wählen.");
+    return;
+  }
+
+  const found = currentPairs.filter(
+    p => (p.height === v1 && p.width === v2) || (p.height === v2 && p.width === v1)
+  );
+
+  if (found.length) showResult(found);
+  else showNoResult("Material in diesen Abmessungen nicht vorhanden.");
+}
+
+// ---------------------------------------------
+// EXCEL IMPORT
+// ---------------------------------------------
+
+document.getElementById("excelBtn").addEventListener("click", () => {
+  document.getElementById("excelInput").click();
+});
+
+document.getElementById("excelInput").addEventListener("change", (evt) => {
+  const file = evt.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: "array" });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+
+      dataRows = json;
+      usingExcel = true;
+      statusTextEl.textContent = `Excel-Daten aktiv: ${dataRows.length} Datensätze.`;
       buildMaterialButtons();
-    })();
-  </script>
+    }
+    catch (err) {
+      console.error(err);
+      usingExcel = false;
+      statusTextEl.textContent = "Fehler beim Excel-Import.";
+    }
+  };
+  reader.readAsArrayBuffer(file);
+});
+
+// ---------------------------------------------
+// INIT
+// ---------------------------------------------
+
+(function init() {
+  statusTextEl.textContent = "Bitte Excel importieren.";
+  buildMaterialButtons();
+})();
+</script>
+
 </body>
 </html>
