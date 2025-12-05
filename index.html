@@ -166,7 +166,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 12px;
+      gap: 10px;
       padding: 24px 16px 20px; /* oben etwas mehr Platz für die Kapsel */
       color: #fff;
       text-align: center;
@@ -180,6 +180,13 @@
       font-size: 1.5rem;
       letter-spacing: 0.2rem;
       font-weight: bold; /* Kurz-MatNr fett */
+    }
+
+    /* Mittig: gesuchte Maße */
+    .result-dims {
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: #fff;
     }
 
     .result-number {
@@ -267,7 +274,6 @@
     let currentDims = [];       // alle möglichen Maße (Zahlen) für den gewählten Button
     let selectedDim1 = null;
     let selectedDim2 = null;
-    let hasSearched = false;    // wurde unter diesem Button schon gesucht?
 
     const statusTextEl = document.getElementById("statusText");
     const materialsContainer = document.getElementById("materialsContainer");
@@ -370,7 +376,6 @@
       currentDims = [];
       selectedDim1 = null;
       selectedDim2 = null;
-      hasSearched = false;
       dimensionArea.style.display = "none";
       clearResultArea();
 
@@ -390,7 +395,6 @@
 
       currentPairs = [];
       const dimSet = new Set();
-      hasSearched = false; // neuer Werkstoff => Paarlogik wieder aktiv
 
       dataRows.forEach(row => {
         const mb = row["Materialbezeichnung"];
@@ -454,26 +458,8 @@
       }
     }
 
-    // NEU: andere Auswahl beim Start einer neuen Eingabe zurücksetzen
-    function resetOtherSelect(which) {
-      if (!hasSearched) return; // nur nach der ersten Suche dieses Verhalten
-
-      if (which === 1) {
-        selectedDim2 = null;
-        fillSelect(select2, "Maß 2", currentDims, null);
-      } else {
-        selectedDim1 = null;
-        fillSelect(select1, "Maß 1", currentDims, null);
-      }
-    }
-
     function computeAllowedDims(fixedDim) {
-      // Nach einer Suche: kein Paarzwang mehr, alle Maße sind offen
-      if (hasSearched) {
-        return currentDims.slice();
-      }
-
-      // Vor der ersten Suche: Paarlogik aktiv
+      // klassische Paarlogik
       if (!fixedDim) {
         return currentDims.slice();
       }
@@ -545,7 +531,7 @@
     }
 
     // Ergebnis-Karten für eine Liste von Zeilen anzeigen
-    function showResults(rows) {
+    function showResults(rows, dimsDisplay) {
       resultArea.innerHTML = "";
 
       rows.forEach(row => {
@@ -564,11 +550,16 @@
         matDiv.className = "result-matnr";
         matDiv.textContent = matShort || "----";
 
+        const dimsDiv = document.createElement("div");
+        dimsDiv.className = "result-dims";
+        dimsDiv.textContent = dimsDisplay || "";
+
         const numDiv = document.createElement("div");
         numDiv.className = "result-number";
         numDiv.textContent = number || "-";
 
         card.appendChild(matDiv);
+        if (dimsDisplay) card.appendChild(dimsDiv);
         card.appendChild(numDiv);
 
         const fachDiv = document.createElement("div");
@@ -592,7 +583,7 @@
     }
 
     // Karte für "kein Ergebnis" anzeigen
-    function showNoResult(message) {
+    function showNoResult(dimsDisplay, message) {
       resultArea.innerHTML = "";
 
       const wrapper = document.createElement("div");
@@ -605,11 +596,16 @@
       matDiv.className = "result-matnr";
       matDiv.textContent = "----";
 
+      const dimsDiv = document.createElement("div");
+      dimsDiv.className = "result-dims";
+      dimsDiv.textContent = dimsDisplay || "";
+
       const numDiv = document.createElement("div");
       numDiv.className = "result-number";
       numDiv.textContent = "-";
 
       card.appendChild(matDiv);
+      if (dimsDisplay) card.appendChild(dimsDiv);
       card.appendChild(numDiv);
 
       const fachDiv = document.createElement("div");
@@ -635,10 +631,11 @@
       const v2 = select2.value ? Number(select2.value) : null;
 
       if (!v1 || !v2) {
-        showNoResult("Bitte zwei Maße wählen.");
-        hasSearched = true;
+        showNoResult("", "Bitte zwei Maße wählen.");
         return;
       }
+
+      const dimsDisplay = `${v1} x ${v2} mm`;
 
       const matches = [];
       for (const p of currentPairs) {
@@ -651,12 +648,17 @@
       }
 
       if (matches.length > 0) {
-        showResults(matches);
+        showResults(matches, dimsDisplay);
       } else {
-        showNoResult("Material in diesen Abmessungen nicht vorhanden.");
+        showNoResult(dimsDisplay, "Material in diesen Abmessungen nicht vorhanden.");
       }
 
-      hasSearched = true;
+      // Nach der Suche: Auswahl wieder neutral,
+      // so als wäre man frisch reingegangen.
+      selectedDim1 = null;
+      selectedDim2 = null;
+      fillSelect(select1, "Maß 1", currentDims, null);
+      fillSelect(select2, "Maß 2", currentDims, null);
     }
 
     // --- Excel / LocalStorage ---
@@ -677,6 +679,8 @@
           const sheet = workbook.Sheets[workbook.SheetNames[0]];
           const json = XLSX.utils.sheet_to_json(sheet, { defval: "" });
 
+          // Erwartete Spaltennamen:
+          // "Material", "Materialbezeichnung", "Lagerplatz"
           dataRows = json;
           usingExcel = true;
           updateStatusText();
@@ -698,12 +702,6 @@
     select1.addEventListener("change", () => onSelectChange(1));
     select2.addEventListener("change", () => onSelectChange(2));
     document.getElementById("searchBtn").addEventListener("click", onSearch);
-
-    // NEU: Beim Klick/Fokus auf ein Feld das andere neutralisieren (nach erster Suche)
-    ["focus", "mousedown", "touchstart"].forEach(evtName => {
-      select1.addEventListener(evtName, () => resetOtherSelect(1));
-      select2.addEventListener(evtName, () => resetOtherSelect(2));
-    });
 
     // --- Init ---
     (function init() {
