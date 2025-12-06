@@ -154,19 +154,22 @@
     .result-wrapper {
       display: flex;
       flex-wrap: wrap;
-      align-items: flex-start;
+      align-items: stretch;   /* beide Spalten gleich hoch */
       justify-content: center;
       gap: 16px;
       width: 100%;
     }
 
-    /* Linker Block: blaues Quadrat + Texte + Button */
+    /* Linker Block: Überschrift + Quadrat + Texte + Button */
     .result-main {
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: space-between;  /* Überschrift oben, Button unten */
       gap: 6px;
       max-width: 260px;
+      flex: 1 1 0;
+      padding: 4px 0;
     }
 
     .result-card {
@@ -197,11 +200,13 @@
       font-weight: 700;
     }
 
+    /* Überschrift über dem Quadrat */
     .result-line {
       font-size: 1.1rem;
       font-weight: 600;
       color: #000;
       margin-top: 2px;
+      text-align: center;
     }
 
     .result-shelf {
@@ -237,9 +242,10 @@
 
     .layout-plan-wrapper {
       margin-top: 4px;
-      flex: 0 0 220px;
+      flex: 1 1 0;
       max-width: 220px;
       display: flex;
+      align-items: stretch;
       justify-content: center;
     }
 
@@ -252,7 +258,7 @@
       overflow: hidden;
     }
 
-    /* äußerer 6x12-Rahmen (über den Zellen, damit nichts „hinaussteht“) */
+    /* äußerer 6x12-Rahmen (über den Zellen) */
     .layout-plan::before {
       content: "";
       position: absolute;
@@ -272,15 +278,15 @@
       font-weight: 600;
       border-radius: 4px;
       box-sizing: border-box;
-      background: #e5e7eb;  /* hellgrau inaktiv */
-      color: #111827;        /* fast schwarz */
+      background: #e5e7eb;
+      color: #111827;
       border: 1px solid #9ca3af;
       z-index: 2;
     }
 
     .layout-plan-cell.active {
-      background: #0050a0;  /* blau wie Ergebnisfeld */
-      color: #ffd600;       /* gelb wie große Zahl */
+      background: #0050a0;
+      color: #ffd600;
       border-color: #111827;
       box-shadow: 0 0 0 2px #111827;
     }
@@ -290,10 +296,10 @@
       border: 2px solid #111827;
       border-radius: 6px;
       box-sizing: border-box;
-      z-index: 4; /* über den Kästen */
+      z-index: 4;
     }
 
-    /* Rahmen um 1–4 (A,B bis A,E = Zeile 0, Spalten 1–4) */
+    /* Rahmen um 1–4 */
     .layout-plan-frame-top {
       top: 0%;
       left: calc(100% * 1 / 6);
@@ -301,7 +307,7 @@
       height: calc(100% * 1 / 12);
     }
 
-    /* Rahmen um 9–13 (D,C bis H,D = Zeilen 3–7, Spalten 2–3) */
+    /* Rahmen um 9–13 */
     .layout-plan-frame-middle {
       top: calc(100% * 3 / 12);
       left: calc(100% * 2 / 6);
@@ -309,7 +315,7 @@
       height: calc(100% * 5 / 12);
     }
 
-    /* Rahmen um 16–17–14–15 (K,C bis L,D = Zeilen 10–11, Spalten 2–3) */
+    /* Rahmen um 16–17–14–15 */
     .layout-plan-frame-bottom {
       top: calc(100% * 10 / 12);
       left: calc(100% * 2 / 6);
@@ -320,14 +326,14 @@
     /* Strichpunktierte Doppel-Linie (Hallendehnung) */
     .layout-plan-break {
       position: absolute;
-      left: -20%;               /* deutlich über den Rahmen hinaus */
+      left: -20%;
       right: -20%;
       height: 6%;
-      background: #f4f6fa;      /* wie Body – „schneidet“ den Rahmen auf */
+      background: #f4f6fa;      /* wie Body – Rahmenbruch */
       border-top: 2px dashed #6b7280;
       border-bottom: 2px dashed #6b7280;
       box-sizing: border-box;
-      z-index: 5;               /* ganz oben */
+      z-index: 5;
     }
 
     /* Zwischen B und C – leicht darunter */
@@ -446,27 +452,26 @@
 
     /* --- Lageplan-Konfiguration: Regale 1–17 auf 6x12 Raster --- */
     const LAYOUT_SHELVES = [
-      { id: 1,  row: 0, col: 1 },      // A,B
-      { id: 2,  row: 0, col: 2 },      // A,C
-      { id: 3,  row: 0, col: 3 },      // A,D
-      { id: 4,  row: 0, col: 4 },      // A,E
+      { id: 1,  row: 0, col: 1 },
+      { id: 2,  row: 0, col: 2 },
+      { id: 3,  row: 0, col: 3 },
+      { id: 4,  row: 0, col: 4 },
 
-      { id: 9,  row: 3, col: 2 },      // D,C
-      { id: 5,  row: 3, col: 3 },      // D,D
-      { id: 10, row: 4, col: 2 },      // E,C
-      { id: 6,  row: 4, col: 3 },      // E,D
-      { id: 11, row: 5, col: 2 },      // F,C
-      { id: 7,  row: 5, col: 3 },      // F,D
-      { id: 12, row: 6, col: 2 },      // G,C
-      { id: 8,  row: 6, col: 3 },      // G,D
+      { id: 9,  row: 3, col: 2 },
+      { id: 5,  row: 3, col: 3 },
+      { id: 10, row: 4, col: 2 },
+      { id: 6,  row: 4, col: 3 },
+      { id: 11, row: 5, col: 2 },
+      { id: 7,  row: 5, col: 3 },
+      { id: 12, row: 6, col: 2 },
+      { id: 8,  row: 6, col: 3 },
 
-      // 13 mittig zwischen C und D in Zeile H
       { id: 13, row: 7, col: 2.5 },
 
-      { id: 16, row: 10, col: 2 },     // K,C
-      { id: 14, row: 10, col: 3 },     // K,D
-      { id: 17, row: 11, col: 2 },     // L,C
-      { id: 15, row: 11, col: 3 }      // L,D
+      { id: 16, row: 10, col: 2 },
+      { id: 14, row: 10, col: 3 },
+      { id: 17, row: 11, col: 2 },
+      { id: 15, row: 11, col: 3 }
     ];
 
     function createLayoutPlan(fieldNumber) {
@@ -495,22 +500,18 @@
         plan.appendChild(cell);
       });
 
-      // Rahmen 1–4
       const frameTop = document.createElement("div");
       frameTop.className = "layout-plan-frame layout-plan-frame-top";
       plan.appendChild(frameTop);
 
-      // Rahmen 9–13
       const frameMiddle = document.createElement("div");
       frameMiddle.className = "layout-plan-frame layout-plan-frame-middle";
       plan.appendChild(frameMiddle);
 
-      // Rahmen 16–17–14–15
       const frameBottom = document.createElement("div");
       frameBottom.className = "layout-plan-frame layout-plan-frame-bottom";
       plan.appendChild(frameBottom);
 
-      // Strichpunktierte Doppel-Linien
       const breakTop = document.createElement("div");
       breakTop.className = "layout-plan-break layout-plan-break-top";
       plan.appendChild(breakTop);
@@ -762,6 +763,15 @@
         const main = document.createElement("div");
         main.className = "result-main";
 
+        const lineDiv = document.createElement("div");
+        lineDiv.className = "result-line";
+        const matName = selectedButton || "";
+        const dimsTxt = dimsDisplayShort || "";
+        lineDiv.textContent =
+          (matName && dimsTxt)
+            ? `${matName} | ${dimsTxt}`
+            : (matName || dimsTxt);
+
         const card = document.createElement("div");
         card.className = "result-card";
 
@@ -775,17 +785,6 @@
 
         card.appendChild(numBig);
         card.appendChild(fachDiv);
-
-        const lineDiv = document.createElement("div");
-        lineDiv.className = "result-line";
-
-        const matName = selectedButton || "";
-        const dimsTxt = dimsDisplayShort || "";
-
-        lineDiv.textContent =
-          (matName && dimsTxt)
-            ? `${matName} | ${dimsTxt}`
-            : (matName || dimsTxt);
 
         const shelf = document.createElement("div");
         shelf.className = "result-shelf";
@@ -802,17 +801,15 @@
           ? `Materialnummer: ${matFull}`
           : "Keine Materialnummer vorhanden";
 
-        main.appendChild(card);
+        /* Reihenfolge: Überschrift oben, dann Karte, dann Regal/Info, ganz unten Button */
         main.appendChild(lineDiv);
+        main.appendChild(card);
         main.appendChild(shelf);
         main.appendChild(infoDiv);
-
-        // Button „Neue Suche“ direkt unter der Ergebnisausgabe
         main.appendChild(createNewSearchButton());
 
         wrapper.appendChild(main);
 
-        // Lageplan daneben
         const planWrapper = createLayoutPlan(Number(number));
         wrapper.appendChild(planWrapper);
 
@@ -831,6 +828,15 @@
       const main = document.createElement("div");
       main.className = "result-main";
 
+      const lineDiv = document.createElement("div");
+      lineDiv.className = "result-line";
+      const matName = selectedButton || "";
+      const dimsTxt = dimsDisplayShort || "";
+      lineDiv.textContent =
+        (matName && dimsTxt)
+          ? `${matName} | ${dimsTxt}`
+          : (matName || dimsTxt || "");
+
       const card = document.createElement("div");
       card.className = "result-card";
 
@@ -845,17 +851,6 @@
       card.appendChild(numBig);
       card.appendChild(fachDiv);
 
-      const lineDiv = document.createElement("div");
-      lineDiv.className = "result-line";
-
-      const matName = selectedButton || "";
-      const dimsTxt = dimsDisplayShort || "";
-
-      lineDiv.textContent =
-        (matName && dimsTxt)
-          ? `${matName} | ${dimsTxt}`
-          : (matName || dimsTxt || "");
-
       const shelf = document.createElement("div");
       shelf.className = "result-shelf";
 
@@ -869,17 +864,14 @@
       infoDiv.className = "result-info";
       infoDiv.textContent = message || "";
 
-      main.appendChild(card);
       main.appendChild(lineDiv);
+      main.appendChild(card);
       main.appendChild(shelf);
       main.appendChild(infoDiv);
-
-      // Button „Neue Suche“ auch hier direkt darunter
       main.appendChild(createNewSearchButton());
 
       wrapper.appendChild(main);
 
-      // Lageplan ohne Hervorhebung
       const planWrapper = createLayoutPlan(null);
       wrapper.appendChild(planWrapper);
 
