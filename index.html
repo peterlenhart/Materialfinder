@@ -150,12 +150,22 @@
       justify-content: center;
     }
 
+    /* Wrapper um Ergebnis + Lageplan nebeneinander */
     .result-wrapper {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 16px;
+      width: 100%;
+    }
+
+    /* Linker Block: blaues Quadrat + Texte */
+    .result-main {
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 6px;
-      width: 100%;
     }
 
     .result-card {
@@ -230,8 +240,9 @@
     /* --- LAGEPLAN-STYLES --- */
 
     .layout-plan-wrapper {
-      margin-top: 16px;
-      width: 100%;
+      margin-top: 4px;
+      flex: 0 0 220px;
+      max-width: 220px;
       display: flex;
       justify-content: center;
     }
@@ -239,12 +250,21 @@
     .layout-plan {
       position: relative;
       width: 100%;
-      max-width: 360px;
       aspect-ratio: 6 / 12; /* 6 Spalten, 12 Reihen */
-      border: 3px solid #111827; /* Anthrazit-Rahmen um das 6x12 Feld */
       border-radius: 10px;
       background: #f9fafb;
       overflow: hidden;
+    }
+
+    /* äußerer 6x12-Rahmen (unter den Zellen, aber über dem Hintergrund) */
+    .layout-plan::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border: 3px solid #111827; /* Anthrazit */
+      border-radius: 10px;
+      box-sizing: border-box;
+      z-index: 1;
     }
 
     .layout-plan-cell {
@@ -259,6 +279,7 @@
       background: #e5e7eb;  /* hellgrau inaktiv */
       color: #111827;        /* fast schwarz */
       border: 1px solid #9ca3af;
+      z-index: 3;            /* über Rahmen + Break */
     }
 
     .layout-plan-cell.active {
@@ -273,6 +294,7 @@
       border: 2px solid #111827;
       border-radius: 6px;
       box-sizing: border-box;
+      z-index: 2;
     }
 
     /* Rahmen um 1–4 (A,B bis A,E = Zeile 0, Spalten 1–4) */
@@ -302,12 +324,14 @@
     /* Strichpunktierte Doppel-Linie (Hallendehnung) */
     .layout-plan-break {
       position: absolute;
-      left: 12%;
-      right: 12%;
+      left: -8%;                 /* über den Rahmen hinaus */
+      right: -8%;
       height: 6%;
+      background: #f4f6fa;       /* wie Body – "schneidet" den Rahmen auf */
       border-top: 2px dashed #6b7280;
       border-bottom: 2px dashed #6b7280;
       box-sizing: border-box;
+      z-index: 2;
     }
 
     /* Zwischen B und C – leicht darunter */
@@ -430,9 +454,8 @@
       }
     ];
 
-    /* --- Lageplan-Konfiguration: Regale 1–17 auf 6x12 Raster (Zeilen A–L, Spalten A–F) --- */
+    /* --- Lageplan-Konfiguration: Regale 1–17 auf 6x12 Raster --- */
     const LAYOUT_SHELVES = [
-      // Zeilen: A=0 ... L=11, Spalten: A=0 ... F=5
       { id: 1,  row: 0, col: 1 },      // A,B
       { id: 2,  row: 0, col: 2 },      // A,C
       { id: 3,  row: 0, col: 3 },      // A,D
@@ -447,8 +470,8 @@
       { id: 12, row: 6, col: 2 },      // G,C
       { id: 8,  row: 6, col: 3 },      // G,D
 
-      // 13: mittig zwischen C und D in Zeile H
-      { id: 13, row: 7, col: 2.5 },    // H, zwischen C(2) und D(3)
+      // 13 mittig zwischen C und D in Zeile H
+      { id: 13, row: 7, col: 2.5 },
 
       { id: 16, row: 10, col: 2 },     // K,C
       { id: 14, row: 10, col: 3 },     // K,D
@@ -456,7 +479,6 @@
       { id: 15, row: 11, col: 3 }      // L,D
     ];
 
-    /* Hilfsfunktion: Lageplan für ein bestimmtes Feld (1–17) erzeugen */
     function createLayoutPlan(fieldNumber) {
       const wrapper = document.createElement("div");
       wrapper.className = "layout-plan-wrapper";
@@ -685,9 +707,8 @@
       const lpStr = lpRaw != null ? String(lpRaw).trim() : "";
 
       if (!lpStr) {
-        // Jetzt 1–17, weil es nur 17 Felder im Plan gibt
-        const n1 = Math.floor(Math.random() * 17) + 1; // 1-17
-        const n2 = Math.floor(Math.random() * 4);      // 0-3
+        const n1 = Math.floor(Math.random() * 17) + 1; // 1–17
+        const n2 = Math.floor(Math.random() * 4);      // 0–3
 
         const number = n1;
         let regalText;
@@ -737,6 +758,9 @@
         const wrapper = document.createElement("div");
         wrapper.className = "result-wrapper";
 
+        const main = document.createElement("div");
+        main.className = "result-main";
+
         const card = document.createElement("div");
         card.className = "result-card";
 
@@ -777,12 +801,14 @@
           ? `Materialnummer: ${matFull}`
           : "Keine Materialnummer vorhanden";
 
-        wrapper.appendChild(card);
-        wrapper.appendChild(lineDiv);
-        wrapper.appendChild(shelf);
-        wrapper.appendChild(infoDiv);
+        main.appendChild(card);
+        main.appendChild(lineDiv);
+        main.appendChild(shelf);
+        main.appendChild(infoDiv);
 
-        // Lageplan anhängen – mit Hervorhebung des Feldes "number"
+        wrapper.appendChild(main);
+
+        // Lageplan daneben
         const planWrapper = createLayoutPlan(Number(number));
         wrapper.appendChild(planWrapper);
 
@@ -797,6 +823,9 @@
 
       const wrapper = document.createElement("div");
       wrapper.className = "result-wrapper";
+
+      const main = document.createElement("div");
+      main.className = "result-main";
 
       const card = document.createElement("div");
       card.className = "result-card";
@@ -836,12 +865,14 @@
       infoDiv.className = "result-info";
       infoDiv.textContent = message || "";
 
-      wrapper.appendChild(card);
-      wrapper.appendChild(lineDiv);
-      wrapper.appendChild(shelf);
-      wrapper.appendChild(infoDiv);
+      main.appendChild(card);
+      main.appendChild(lineDiv);
+      main.appendChild(shelf);
+      main.appendChild(infoDiv);
 
-      // Lageplan ohne Hervorhebung (kein Treffer)
+      wrapper.appendChild(main);
+
+      // Lageplan ohne Hervorhebung
       const planWrapper = createLayoutPlan(null);
       wrapper.appendChild(planWrapper);
 
