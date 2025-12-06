@@ -94,7 +94,7 @@
 
     .dimension-area {
       margin-top: 8px;
-      display: none; /* erst zeigen, wenn Button gewählt */
+      display: none;
     }
 
     .dim-row-selects {
@@ -150,7 +150,6 @@
       justify-content: center;
     }
 
-    /* Wrapper um komplette Ergebnisdarstellung */
     .result-wrapper {
       display: flex;
       flex-direction: column;
@@ -158,7 +157,6 @@
       gap: 6px;
     }
 
-    /* Blaues Quadrat mit Nummer + Fach */
     .result-card {
       background: #0050a0;
       border-radius: 32px;
@@ -187,7 +185,6 @@
       font-weight: 700;
     }
 
-    /* Zeile: Material + Maße (z.B. "K110 20x160") */
     .result-line {
       font-size: 1.1rem;
       font-weight: 600;
@@ -195,7 +192,6 @@
       margin-top: 2px;
     }
 
-    /* Regalfach-Balken */
     .result-shelf {
       margin-top: 2px;
       background: #d1d5db;
@@ -218,7 +214,6 @@
       color: #000;
     }
 
-    /* Kleine Zusatzinfo darunter (volle Materialnummer) */
     .result-info {
       margin-top: 2px;
       font-size: 0.8rem;
@@ -226,7 +221,6 @@
       text-align: center;
     }
 
-    /* Zeile für "Neue Suche"-Button */
     .new-search-row {
       display: none;
       margin-top: 20px;
@@ -243,7 +237,6 @@
   <div class="app">
     <h1>Material Finder</h1>
 
-    <!-- Alles, was für die Suche nötig ist -->
     <div id="searchSection">
       <div class="top-row">
         <button class="excel-button" id="excelBtn">
@@ -257,9 +250,7 @@
 
       <input type="file" id="excelInput" accept=".xlsx,.xls" style="display:none" />
 
-      <div class="materials" id="materialsContainer">
-        <!-- Buttons werden per JS aus fixer Liste erzeugt -->
-      </div>
+      <div class="materials" id="materialsContainer"></div>
 
       <div class="dimension-area" id="dimensionArea">
         <div class="dim-row-selects">
@@ -274,12 +265,8 @@
       </div>
     </div>
 
-    <!-- Ergebnis-Bereich -->
-    <div class="result-area" id="resultArea">
-      <!-- Ergebnis-Karten werden per JS erzeugt -->
-    </div>
+    <div class="result-area" id="resultArea"></div>
 
-    <!-- Unterer Button in voller Breite: NEUE SUCHE -->
     <div class="new-search-row" id="newSearchRow">
       <button class="search-btn" id="newSearchBtn">Neue Suche</button>
     </div>
@@ -288,7 +275,6 @@
   <script>
     const STORAGE_KEY = "materialFinderDataV2";
 
-    // feste Buttons (ohne K510)
     const MATERIAL_BUTTONS = [
       "W300",
       "K110",
@@ -298,12 +284,12 @@
       "Toolox"
     ];
 
-    let dataRows = [];          // Excel- oder Demo-Daten
+    let dataRows = [];
     let usingExcel = false;
-    let selectedButton = null;  // Name des gewählten Materials (z.B. "K490")
+    let selectedButton = null;
 
-    let currentPairs = [];      // {row, height, width}
-    let currentDims = [];       // alle möglichen Maße (Zahlen) für den gewählten Button
+    let currentPairs = [];
+    let currentDims = [];
     let selectedDim1 = null;
     let selectedDim2 = null;
 
@@ -317,7 +303,6 @@
     const newSearchRow = document.getElementById("newSearchRow");
     const newSearchBtn = document.getElementById("newSearchBtn");
 
-    // Demo-Daten im neuen Format
     const demoData = [
       {
         Material: "7900001001",
@@ -351,8 +336,6 @@
       }
     ];
 
-    // --- Hilfsfunktionen ---
-
     function updateStatusText() {
       if (usingExcel) {
         statusTextEl.textContent = `Excel-Daten aktiv: ${dataRows.length} Datensätze.`;
@@ -361,7 +344,6 @@
       }
     }
 
-    // Prüfen, ob eine Zeile eine Durchmesserangabe enthält -> dann ignorieren
     function hasDurchmesser(str) {
       if (!str) return false;
       const s = String(str);
@@ -370,12 +352,10 @@
       return false;
     }
 
-    // erstes Zahlen-x/*-Zahlen-Paar in Materialbezeichnung finden
     function extractFirstDimPair(matBez) {
       if (!matBez) return null;
       const s = String(matBez);
 
-      // Zeilen mit Durchmesserangaben ignorieren
       if (hasDurchmesser(s)) {
         return null;
       }
@@ -494,7 +474,6 @@
     }
 
     function computeAllowedDims(fixedDim) {
-      // klassische Paarlogik
       if (!fixedDim) {
         return currentDims.slice();
       }
@@ -526,14 +505,13 @@
       }
     }
 
-    // Lagerplatz in Anzeigeinformationen umwandeln
     function getLagerplatzInfo(row) {
       const lpRaw = row["Lagerplatz"];
       const lpStr = lpRaw != null ? String(lpRaw).trim() : "";
 
       if (!lpStr) {
-        const n1 = Math.floor(Math.random() * 27) + 1; // 1-27
-        const n2 = Math.floor(Math.random() * 4);      // 0-3
+        const n1 = Math.floor(Math.random() * 27) + 1;
+        const n2 = Math.floor(Math.random() * 4);
 
         const number = n1;
         let regalText;
@@ -565,14 +543,12 @@
       return { number, regalText };
     }
 
-    // Nach einer Suche: nur Ergebnis + "Neue Suche" anzeigen
     function showOnlyResultMode() {
       searchSection.style.display = "none";
       resultArea.style.display = "flex";
       newSearchRow.style.display = "block";
     }
 
-    // Ergebnis-Karten für eine Liste von Zeilen anzeigen
     function showResults(rows, dimsDisplayShort) {
       resultArea.innerHTML = "";
 
@@ -585,7 +561,6 @@
         const wrapper = document.createElement("div");
         wrapper.className = "result-wrapper";
 
-        // Blaues Quadrat
         const card = document.createElement("div");
         card.className = "result-card";
 
@@ -600,14 +575,17 @@
         card.appendChild(numBig);
         card.appendChild(fachDiv);
 
-        // Zeile: Material + Maße (z.B. "K110 20x160")
         const lineDiv = document.createElement("div");
         lineDiv.className = "result-line";
+
         const matName = selectedButton || "";
         const dimsTxt = dimsDisplayShort || "";
-        lineDiv.textContent = (matName && dimsTxt) ? `${matName} ${dimsTxt}` : (matName || dimsTxt);
 
-        // Regal-Balken
+        lineDiv.textContent =
+          (matName && dimsTxt)
+            ? `${matName} | ${dimsTxt}`   // ← geändert
+            : (matName || dimsTxt);
+
         const shelf = document.createElement("div");
         shelf.className = "result-shelf";
 
@@ -617,7 +595,6 @@
 
         shelf.appendChild(shelfInner);
 
-        // Info (volle Materialnummer)
         const infoDiv = document.createElement("div");
         infoDiv.className = "result-info";
         infoDiv.textContent = matFull
@@ -635,7 +612,6 @@
       showOnlyResultMode();
     }
 
-    // Karte für "kein Ergebnis" anzeigen
     function showNoResult(dimsDisplayShort, message) {
       resultArea.innerHTML = "";
 
@@ -658,9 +634,14 @@
 
       const lineDiv = document.createElement("div");
       lineDiv.className = "result-line";
+
       const matName = selectedButton || "";
       const dimsTxt = dimsDisplayShort || "";
-      lineDiv.textContent = (matName && dimsTxt) ? `${matName} ${dimsTxt}` : (matName || dimsTxt || "");
+
+      lineDiv.textContent =
+        (matName && dimsTxt)
+          ? `${matName} | ${dimsTxt}`   // ← geändert
+          : (matName || dimsTxt || "");
 
       const shelf = document.createElement("div");
       shelf.className = "result-shelf";
@@ -695,7 +676,6 @@
         return;
       }
 
-      // compacte Schreibweise wie in deiner Skizze: 20x160
       const dimsDisplayShort = `${v1}x${v2}`;
 
       const matches = [];
@@ -714,14 +694,11 @@
         showNoResult(dimsDisplayShort, "Material in diesen Abmessungen nicht vorhanden.");
       }
 
-      // Nach der Suche: Auswahl wieder neutral
       selectedDim1 = null;
       selectedDim2 = null;
       fillSelect(select1, "Maß 1", currentDims, null);
       fillSelect(select2, "Maß 2", currentDims, null);
     }
-
-    // --- Excel / LocalStorage ---
 
     document.getElementById("excelBtn").addEventListener("click", () => {
       document.getElementById("excelInput").click();
@@ -739,8 +716,6 @@
           const sheet = workbook.Sheets[workbook.SheetNames[0]];
           const json = XLSX.utils.sheet_to_json(sheet, { defval: "" });
 
-          // Erwartete Spaltennamen:
-          // "Material", "Materialbezeichnung", "Lagerplatz"
           dataRows = json;
           usingExcel = true;
           updateStatusText();
@@ -758,19 +733,16 @@
       reader.readAsArrayBuffer(file);
     });
 
-    // --- Event-Handler für Maße & Suche ---
     select1.addEventListener("change", () => onSelectChange(1));
     select2.addEventListener("change", () => onSelectChange(2));
     document.getElementById("searchBtn").addEventListener("click", onSearch);
 
-    // "Neue Suche" → alles wieder wie am Anfang
     newSearchBtn.addEventListener("click", () => {
       searchSection.style.display = "block";
       newSearchRow.style.display = "none";
       buildMaterialButtons();
     });
 
-    // --- Init ---
     (function init() {
       try {
         const saved = localStorage.getItem(STORAGE_KEY);
