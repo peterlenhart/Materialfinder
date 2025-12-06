@@ -155,6 +155,7 @@
       flex-direction: column;
       align-items: center;
       gap: 6px;
+      width: 100%;
     }
 
     .result-card {
@@ -224,6 +225,99 @@
     .new-search-row {
       display: none;
       margin-top: 20px;
+    }
+
+    /* --- LAGEPLAN-STYLES --- */
+
+    .layout-plan-wrapper {
+      margin-top: 16px;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
+
+    .layout-plan {
+      position: relative;
+      width: 100%;
+      max-width: 360px;
+      aspect-ratio: 6 / 12; /* 6 Spalten, 12 Reihen */
+      border: 3px solid #111827; /* Anthrazit-Rahmen um das 6x12 Feld */
+      border-radius: 10px;
+      background: #f9fafb;
+      overflow: hidden;
+    }
+
+    .layout-plan-cell {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border-radius: 4px;
+      box-sizing: border-box;
+      background: #e5e7eb;  /* hellgrau inaktiv */
+      color: #111827;        /* fast schwarz */
+      border: 1px solid #9ca3af;
+    }
+
+    .layout-plan-cell.active {
+      background: #0050a0;  /* blau wie Ergebnisfeld */
+      color: #ffd600;       /* gelb wie große Zahl */
+      border-color: #111827;
+      box-shadow: 0 0 0 2px #111827;
+    }
+
+    .layout-plan-frame {
+      position: absolute;
+      border: 2px solid #111827;
+      border-radius: 6px;
+      box-sizing: border-box;
+    }
+
+    /* Rahmen um 1–4 (A,B bis A,E = Zeile 0, Spalten 1–4) */
+    .layout-plan-frame-top {
+      top: 0%;
+      left: calc(100% * 1 / 6);
+      width: calc(100% * 4 / 6);
+      height: calc(100% * 1 / 12);
+    }
+
+    /* Rahmen um 9–13 (D,C bis H,D = Zeilen 3–7, Spalten 2–3) */
+    .layout-plan-frame-middle {
+      top: calc(100% * 3 / 12);
+      left: calc(100% * 2 / 6);
+      width: calc(100% * 2 / 6);
+      height: calc(100% * 5 / 12);
+    }
+
+    /* Rahmen um 16–17–14–15 (K,C bis L,D = Zeilen 10–11, Spalten 2–3) */
+    .layout-plan-frame-bottom {
+      top: calc(100% * 10 / 12);
+      left: calc(100% * 2 / 6);
+      width: calc(100% * 2 / 6);
+      height: calc(100% * 2 / 12);
+    }
+
+    /* Strichpunktierte Doppel-Linie (Hallendehnung) */
+    .layout-plan-break {
+      position: absolute;
+      left: 12%;
+      right: 12%;
+      height: 6%;
+      border-top: 2px dashed #6b7280;
+      border-bottom: 2px dashed #6b7280;
+      box-sizing: border-box;
+    }
+
+    /* Zwischen B und C – leicht darunter */
+    .layout-plan-break-top {
+      top: 15%;
+    }
+
+    /* Zwischen I und J – leicht darunter */
+    .layout-plan-break-bottom {
+      top: 74%;
     }
 
     @media (min-width: 768px) {
@@ -335,6 +429,87 @@
         Lagerplatz: "3.1"
       }
     ];
+
+    /* --- Lageplan-Konfiguration: Regale 1–17 auf 6x12 Raster (Zeilen A–L, Spalten A–F) --- */
+    const LAYOUT_SHELVES = [
+      // Zeilen: A=0 ... L=11, Spalten: A=0 ... F=5
+      { id: 1,  row: 0, col: 1 },      // A,B
+      { id: 2,  row: 0, col: 2 },      // A,C
+      { id: 3,  row: 0, col: 3 },      // A,D
+      { id: 4,  row: 0, col: 4 },      // A,E
+
+      { id: 9,  row: 3, col: 2 },      // D,C
+      { id: 5,  row: 3, col: 3 },      // D,D
+      { id: 10, row: 4, col: 2 },      // E,C
+      { id: 6,  row: 4, col: 3 },      // E,D
+      { id: 11, row: 5, col: 2 },      // F,C
+      { id: 7,  row: 5, col: 3 },      // F,D
+      { id: 12, row: 6, col: 2 },      // G,C
+      { id: 8,  row: 6, col: 3 },      // G,D
+
+      // 13: mittig zwischen C und D in Zeile H
+      { id: 13, row: 7, col: 2.5 },    // H, zwischen C(2) und D(3)
+
+      { id: 16, row: 10, col: 2 },     // K,C
+      { id: 14, row: 10, col: 3 },     // K,D
+      { id: 17, row: 11, col: 2 },     // L,C
+      { id: 15, row: 11, col: 3 }      // L,D
+    ];
+
+    /* Hilfsfunktion: Lageplan für ein bestimmtes Feld (1–17) erzeugen */
+    function createLayoutPlan(fieldNumber) {
+      const wrapper = document.createElement("div");
+      wrapper.className = "layout-plan-wrapper";
+
+      const plan = document.createElement("div");
+      plan.className = "layout-plan";
+
+      const cellWidth = "calc(100% / 6)";
+      const cellHeight = "calc(100% / 12)";
+
+      LAYOUT_SHELVES.forEach(shelf => {
+        const cell = document.createElement("div");
+        cell.className = "layout-plan-cell";
+        if (fieldNumber && Number(fieldNumber) === shelf.id) {
+          cell.classList.add("active");
+        }
+        cell.textContent = shelf.id;
+
+        cell.style.width = cellWidth;
+        cell.style.height = cellHeight;
+        cell.style.left = `calc(100% * ${shelf.col} / 6)`;
+        cell.style.top = `calc(100% * ${shelf.row} / 12)`;
+
+        plan.appendChild(cell);
+      });
+
+      // Rahmen 1–4
+      const frameTop = document.createElement("div");
+      frameTop.className = "layout-plan-frame layout-plan-frame-top";
+      plan.appendChild(frameTop);
+
+      // Rahmen 9–13
+      const frameMiddle = document.createElement("div");
+      frameMiddle.className = "layout-plan-frame layout-plan-frame-middle";
+      plan.appendChild(frameMiddle);
+
+      // Rahmen 16–17–14–15
+      const frameBottom = document.createElement("div");
+      frameBottom.className = "layout-plan-frame layout-plan-frame-bottom";
+      plan.appendChild(frameBottom);
+
+      // Strichpunktierte Doppel-Linien
+      const breakTop = document.createElement("div");
+      breakTop.className = "layout-plan-break layout-plan-break-top";
+      plan.appendChild(breakTop);
+
+      const breakBottom = document.createElement("div");
+      breakBottom.className = "layout-plan-break layout-plan-break-bottom";
+      plan.appendChild(breakBottom);
+
+      wrapper.appendChild(plan);
+      return wrapper;
+    }
 
     function updateStatusText() {
       if (usingExcel) {
@@ -510,8 +685,9 @@
       const lpStr = lpRaw != null ? String(lpRaw).trim() : "";
 
       if (!lpStr) {
-        const n1 = Math.floor(Math.random() * 27) + 1;
-        const n2 = Math.floor(Math.random() * 4);
+        // Jetzt 1–17, weil es nur 17 Felder im Plan gibt
+        const n1 = Math.floor(Math.random() * 17) + 1; // 1-17
+        const n2 = Math.floor(Math.random() * 4);      // 0-3
 
         const number = n1;
         let regalText;
@@ -583,7 +759,7 @@
 
         lineDiv.textContent =
           (matName && dimsTxt)
-            ? `${matName} | ${dimsTxt}`   // ← geändert
+            ? `${matName} | ${dimsTxt}`
             : (matName || dimsTxt);
 
         const shelf = document.createElement("div");
@@ -605,6 +781,10 @@
         wrapper.appendChild(lineDiv);
         wrapper.appendChild(shelf);
         wrapper.appendChild(infoDiv);
+
+        // Lageplan anhängen – mit Hervorhebung des Feldes "number"
+        const planWrapper = createLayoutPlan(Number(number));
+        wrapper.appendChild(planWrapper);
 
         resultArea.appendChild(wrapper);
       });
@@ -640,7 +820,7 @@
 
       lineDiv.textContent =
         (matName && dimsTxt)
-          ? `${matName} | ${dimsTxt}`   // ← geändert
+          ? `${matName} | ${dimsTxt}`
           : (matName || dimsTxt || "");
 
       const shelf = document.createElement("div");
@@ -660,6 +840,10 @@
       wrapper.appendChild(lineDiv);
       wrapper.appendChild(shelf);
       wrapper.appendChild(infoDiv);
+
+      // Lageplan ohne Hervorhebung (kein Treffer)
+      const planWrapper = createLayoutPlan(null);
+      wrapper.appendChild(planWrapper);
 
       resultArea.appendChild(wrapper);
       showOnlyResultMode();
@@ -741,6 +925,7 @@
       searchSection.style.display = "block";
       newSearchRow.style.display = "none";
       buildMaterialButtons();
+      clearResultArea();
     });
 
     (function init() {
