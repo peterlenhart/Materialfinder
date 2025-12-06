@@ -5,8 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Material Finder</title>
 
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="materialfinder_icon.png" sizes="512x512" />
+  <!-- Favicon / Icon -->
+  <link rel="icon" href="materialfinder_icon.png" type="image/png" />
+  <link rel="apple-touch-icon" href="materialfinder_icon.png" />
 
   <!-- Excel-Library von CDN -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -147,85 +148,88 @@
       flex-wrap: wrap;
       gap: 16px;
       justify-content: center;
-      flex-direction: column;
-      align-items: center;
     }
 
-    /* Wrapper um Karte + Text darunter */
+    /* Wrapper um komplette Ergebnisdarstellung */
     .result-wrapper {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 4px;
+      gap: 6px;
     }
 
-    /* Blaue Karte */
+    /* Blaues Quadrat mit Nummer + Fach */
     .result-card {
-      background: #0050a0; /* Blau */
-      border-radius: 24px;
+      background: #0050a0;
+      border-radius: 32px;
       width: min(40vh, 40vw);
       height: min(40vh, 40vw);
-      max-width: 230px;
-      max-height: 230px;
+      max-width: 220px;
+      max-height: 220px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 10px;
-      padding: 24px 16px 20px; /* oben etwas mehr Platz für die Kapsel */
-      color: #fff;
-      text-align: center;
-    }
-
-    .result-matnr {
-      background: #fff;
-      color: #000;
-      border-radius: 16px;
-      padding: 6px 16px;
-      font-size: 1.5rem;
-      letter-spacing: 0.2rem;
-      font-weight: bold; /* Kurz-MatNr fett */
-    }
-
-    /* Mittig: gesuchte Maße */
-    .result-dims {
-      font-size: 1.1rem;
-      font-weight: 500;
-      color: #fff;
-    }
-
-    .result-number {
+      gap: 6px;
       color: #ffd600;
-      font-weight: bold;
-      font-size: 3.4rem;
+      text-align: center;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+    }
+
+    .result-number-big {
+      font-size: 4.8rem;
+      font-weight: 900;
       line-height: 1;
     }
 
-    /* Text unterhalb des Quadrats */
     .result-fach {
-      font-size: 1.2rem;
+      font-size: 1.4rem;
+      font-weight: 700;
+    }
+
+    /* Zeile: Material + Maße (z.B. "K110 20x160") */
+    .result-line {
+      font-size: 1.1rem;
       font-weight: 600;
+      color: #000;
+      margin-top: 2px;
+    }
+
+    /* Regalfach-Balken */
+    .result-shelf {
+      margin-top: 2px;
+      background: #d1d5db;
+      border-radius: 14px;
+      padding: 6px 10px;
+      min-width: 220px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .result-shelf-inner {
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 4px 20px;
+      min-width: 90px;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: 0.15rem;
       color: #000;
     }
 
+    /* Kleine Zusatzinfo darunter (volle Materialnummer) */
     .result-info {
-      font-size: 0.95rem;
-      color: #000;
+      margin-top: 2px;
+      font-size: 0.8rem;
+      color: #444;
       text-align: center;
     }
 
-    /* Button für "Neue Suche" – gleiche Optik wie Suchen */
-    .new-search-btn {
+    /* Zeile für "Neue Suche"-Button */
+    .new-search-row {
       display: none;
-      margin-top: 16px;
-      width: 100%;
-      padding: 12px 0;
-      font-size: 1.15rem;
-      border-radius: 12px;
-      border: none;
-      background: #0050a0;
-      color: #fff;
-      cursor: pointer;
+      margin-top: 20px;
     }
 
     @media (min-width: 768px) {
@@ -239,39 +243,46 @@
   <div class="app">
     <h1>Material Finder</h1>
 
-    <div class="top-row">
-      <button class="excel-button" id="excelBtn">
-        <span class="icon">📥</span>
-        <span>Excel importieren</span>
-      </button>
-      <div class="status-text" id="statusText">
-        Keine Excel-Daten importiert (Demo-Fallback aktiv).
+    <!-- Alles, was für die Suche nötig ist -->
+    <div id="searchSection">
+      <div class="top-row">
+        <button class="excel-button" id="excelBtn">
+          <span class="icon">📥</span>
+          <span>Excel importieren</span>
+        </button>
+        <div class="status-text" id="statusText">
+          Keine Excel-Daten importiert (Demo-Fallback aktiv).
+        </div>
+      </div>
+
+      <input type="file" id="excelInput" accept=".xlsx,.xls" style="display:none" />
+
+      <div class="materials" id="materialsContainer">
+        <!-- Buttons werden per JS aus fixer Liste erzeugt -->
+      </div>
+
+      <div class="dimension-area" id="dimensionArea">
+        <div class="dim-row-selects">
+          <div class="dim-picker">
+            <select id="select1"></select>
+          </div>
+          <div class="dim-picker">
+            <select id="select2"></select>
+          </div>
+        </div>
+        <button class="search-btn" id="searchBtn">Suchen</button>
       </div>
     </div>
 
-    <input type="file" id="excelInput" accept=".xlsx,.xls" style="display:none" />
-
-    <div class="materials" id="materialsContainer">
-      <!-- Buttons werden per JS aus fixer Liste erzeugt -->
-    </div>
-
-    <div class="dimension-area" id="dimensionArea">
-      <div class="dim-row-selects">
-        <div class="dim-picker">
-          <select id="select1"></select>
-        </div>
-        <div class="dim-picker">
-          <select id="select2"></select>
-        </div>
-      </div>
-      <button class="search-btn" id="searchBtn">Suchen</button>
-    </div>
-
+    <!-- Ergebnis-Bereich -->
     <div class="result-area" id="resultArea">
       <!-- Ergebnis-Karten werden per JS erzeugt -->
     </div>
 
-    <button class="new-search-btn" id="newSearchBtn">Neue Suche</button>
+    <!-- Unterer Button in voller Breite: NEUE SUCHE -->
+    <div class="new-search-row" id="newSearchRow">
+      <button class="search-btn" id="newSearchBtn">Neue Suche</button>
+    </div>
   </div>
 
   <script>
@@ -302,7 +313,8 @@
     const select1 = document.getElementById("select1");
     const select2 = document.getElementById("select2");
     const resultArea = document.getElementById("resultArea");
-    const topRow = document.querySelector(".top-row");
+    const searchSection = document.getElementById("searchSection");
+    const newSearchRow = document.getElementById("newSearchRow");
     const newSearchBtn = document.getElementById("newSearchBtn");
 
     // Demo-Daten im neuen Format
@@ -401,7 +413,6 @@
       selectedDim2 = null;
       dimensionArea.style.display = "none";
       clearResultArea();
-      newSearchBtn.style.display = "none";
 
       MATERIAL_BUTTONS.forEach(name => {
         const btn = document.createElement("button");
@@ -554,8 +565,15 @@
       return { number, regalText };
     }
 
+    // Nach einer Suche: nur Ergebnis + "Neue Suche" anzeigen
+    function showOnlyResultMode() {
+      searchSection.style.display = "none";
+      resultArea.style.display = "flex";
+      newSearchRow.style.display = "block";
+    }
+
     // Ergebnis-Karten für eine Liste von Zeilen anzeigen
-    function showResults(rows, dimsDisplay) {
+    function showResults(rows, dimsDisplayShort) {
       resultArea.innerHTML = "";
 
       rows.forEach(row => {
@@ -567,53 +585,58 @@
         const wrapper = document.createElement("div");
         wrapper.className = "result-wrapper";
 
+        // Blaues Quadrat
         const card = document.createElement("div");
         card.className = "result-card";
 
-        const matDiv = document.createElement("div");
-        matDiv.className = "result-matnr";
-        matDiv.textContent = matShort || "----";
-
-        const dimsDiv = document.createElement("div");
-        dimsDiv.className = "result-dims";
-        dimsDiv.textContent = dimsDisplay || "";
-
-        const numDiv = document.createElement("div");
-        numDiv.className = "result-number";
-        numDiv.textContent = number || "-";
-
-        card.appendChild(matDiv);
-        if (dimsDisplay) card.appendChild(dimsDiv);
-        card.appendChild(numDiv);
+        const numBig = document.createElement("div");
+        numBig.className = "result-number-big";
+        numBig.textContent = number || "-";
 
         const fachDiv = document.createElement("div");
         fachDiv.className = "result-fach";
-        fachDiv.textContent = regalText;
+        fachDiv.textContent = regalText || "";
 
+        card.appendChild(numBig);
+        card.appendChild(fachDiv);
+
+        // Zeile: Material + Maße (z.B. "K110 20x160")
+        const lineDiv = document.createElement("div");
+        lineDiv.className = "result-line";
+        const matName = selectedButton || "";
+        const dimsTxt = dimsDisplayShort || "";
+        lineDiv.textContent = (matName && dimsTxt) ? `${matName} ${dimsTxt}` : (matName || dimsTxt);
+
+        // Regal-Balken
+        const shelf = document.createElement("div");
+        shelf.className = "result-shelf";
+
+        const shelfInner = document.createElement("div");
+        shelfInner.className = "result-shelf-inner";
+        shelfInner.textContent = matShort || "----";
+
+        shelf.appendChild(shelfInner);
+
+        // Info (volle Materialnummer)
         const infoDiv = document.createElement("div");
         infoDiv.className = "result-info";
-
-        // NEU: Material | Maße als klare Trennung
-        if (selectedButton && dimsDisplay) {
-          infoDiv.textContent = `${selectedButton} | ${dimsDisplay}`;
-        } else if (dimsDisplay) {
-          infoDiv.textContent = dimsDisplay;
-        } else {
-          infoDiv.textContent = "";
-        }
+        infoDiv.textContent = matFull
+          ? `Materialnummer: ${matFull}`
+          : "Keine Materialnummer vorhanden";
 
         wrapper.appendChild(card);
-        wrapper.appendChild(fachDiv);
+        wrapper.appendChild(lineDiv);
+        wrapper.appendChild(shelf);
         wrapper.appendChild(infoDiv);
 
         resultArea.appendChild(wrapper);
       });
 
-      resultArea.style.display = "flex";
+      showOnlyResultMode();
     }
 
     // Karte für "kein Ergebnis" anzeigen
-    function showNoResult(dimsDisplay, message) {
+    function showNoResult(dimsDisplayShort, message) {
       resultArea.innerHTML = "";
 
       const wrapper = document.createElement("div");
@@ -622,36 +645,43 @@
       const card = document.createElement("div");
       card.className = "result-card";
 
-      const matDiv = document.createElement("div");
-      matDiv.className = "result-matnr";
-      matDiv.textContent = "----";
-
-      const dimsDiv = document.createElement("div");
-      dimsDiv.className = "result-dims";
-      dimsDiv.textContent = dimsDisplay || "";
-
-      const numDiv = document.createElement("div");
-      numDiv.className = "result-number";
-      numDiv.textContent = "-";
-
-      card.appendChild(matDiv);
-      if (dimsDisplay) card.appendChild(dimsDiv);
-      card.appendChild(numDiv);
+      const numBig = document.createElement("div");
+      numBig.className = "result-number-big";
+      numBig.textContent = "-";
 
       const fachDiv = document.createElement("div");
       fachDiv.className = "result-fach";
       fachDiv.textContent = "Material nicht vorhanden";
+
+      card.appendChild(numBig);
+      card.appendChild(fachDiv);
+
+      const lineDiv = document.createElement("div");
+      lineDiv.className = "result-line";
+      const matName = selectedButton || "";
+      const dimsTxt = dimsDisplayShort || "";
+      lineDiv.textContent = (matName && dimsTxt) ? `${matName} ${dimsTxt}` : (matName || dimsTxt || "");
+
+      const shelf = document.createElement("div");
+      shelf.className = "result-shelf";
+
+      const shelfInner = document.createElement("div");
+      shelfInner.className = "result-shelf-inner";
+      shelfInner.textContent = "----";
+
+      shelf.appendChild(shelfInner);
 
       const infoDiv = document.createElement("div");
       infoDiv.className = "result-info";
       infoDiv.textContent = message || "";
 
       wrapper.appendChild(card);
-      wrapper.appendChild(fachDiv);
+      wrapper.appendChild(lineDiv);
+      wrapper.appendChild(shelf);
       wrapper.appendChild(infoDiv);
 
       resultArea.appendChild(wrapper);
-      resultArea.style.display = "flex";
+      showOnlyResultMode();
     }
 
     function onSearch() {
@@ -662,39 +692,33 @@
 
       if (!v1 || !v2) {
         showNoResult("", "Bitte zwei Maße wählen.");
-      } else {
-        const dimsDisplay = `${v1} x ${v2} mm`;
+        return;
+      }
 
-        const matches = [];
-        for (const p of currentPairs) {
-          if (
-            (p.height === v1 && p.width === v2) ||
-            (p.height === v2 && p.width === v1)
-          ) {
-            matches.push(p.row);
-          }
-        }
+      // compacte Schreibweise wie in deiner Skizze: 20x160
+      const dimsDisplayShort = `${v1}x${v2}`;
 
-        if (matches.length > 0) {
-          showResults(matches, dimsDisplay);
-        } else {
-          showNoResult(dimsDisplay, "Material in diesen Abmessungen nicht vorhanden.");
+      const matches = [];
+      for (const p of currentPairs) {
+        if (
+          (p.height === v1 && p.width === v2) ||
+          (p.height === v2 && p.width === v1)
+        ) {
+          matches.push(p.row);
         }
       }
 
-      // Nach der Suche: Auswahl wieder neutral,
-      // so als wäre man frisch reingegangen.
+      if (matches.length > 0) {
+        showResults(matches, dimsDisplayShort);
+      } else {
+        showNoResult(dimsDisplayShort, "Material in diesen Abmessungen nicht vorhanden.");
+      }
+
+      // Nach der Suche: Auswahl wieder neutral
       selectedDim1 = null;
       selectedDim2 = null;
       fillSelect(select1, "Maß 1", currentDims, null);
       fillSelect(select2, "Maß 2", currentDims, null);
-
-      // UI umschalten: nur Ergebnis + "Neue Suche" anzeigen
-      topRow.style.display = "none";
-      materialsContainer.style.display = "none";
-      dimensionArea.style.display = "none";
-      resultArea.style.display = "flex";
-      newSearchBtn.style.display = "block";
     }
 
     // --- Excel / LocalStorage ---
@@ -739,19 +763,11 @@
     select2.addEventListener("change", () => onSelectChange(2));
     document.getElementById("searchBtn").addEventListener("click", onSearch);
 
-    // "Neue Suche" – alles wieder einblenden
+    // "Neue Suche" → alles wieder wie am Anfang
     newSearchBtn.addEventListener("click", () => {
-      clearResultArea();
-      newSearchBtn.style.display = "none";
-
-      topRow.style.display = "flex";
-      materialsContainer.style.display = "grid";
-      // dimensionArea nur zeigen, wenn Button gewählt + Maße vorhanden
-      if (selectedButton && currentDims.length > 0) {
-        dimensionArea.style.display = "block";
-      } else {
-        dimensionArea.style.display = "none";
-      }
+      searchSection.style.display = "block";
+      newSearchRow.style.display = "none";
+      buildMaterialButtons();
     });
 
     // --- Init ---
