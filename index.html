@@ -160,12 +160,13 @@
       width: 100%;
     }
 
-    /* Linker Block: blaues Quadrat + Texte */
+    /* Linker Block: blaues Quadrat + Texte + Button */
     .result-main {
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 6px;
+      max-width: 260px;
     }
 
     .result-card {
@@ -232,11 +233,6 @@
       text-align: center;
     }
 
-    .new-search-row {
-      display: none;
-      margin-top: 20px;
-    }
-
     /* --- LAGEPLAN-STYLES --- */
 
     .layout-plan-wrapper {
@@ -256,7 +252,7 @@
       overflow: hidden;
     }
 
-    /* äußerer 6x12-Rahmen (unter den Zellen, aber über dem Hintergrund) */
+    /* äußerer 6x12-Rahmen (über den Zellen, damit nichts „hinaussteht“) */
     .layout-plan::before {
       content: "";
       position: absolute;
@@ -264,7 +260,7 @@
       border: 3px solid #111827; /* Anthrazit */
       border-radius: 10px;
       box-sizing: border-box;
-      z-index: 1;
+      z-index: 3;
     }
 
     .layout-plan-cell {
@@ -279,7 +275,7 @@
       background: #e5e7eb;  /* hellgrau inaktiv */
       color: #111827;        /* fast schwarz */
       border: 1px solid #9ca3af;
-      z-index: 3;            /* über Rahmen + Break */
+      z-index: 2;
     }
 
     .layout-plan-cell.active {
@@ -294,7 +290,7 @@
       border: 2px solid #111827;
       border-radius: 6px;
       box-sizing: border-box;
-      z-index: 2;
+      z-index: 4; /* über den Kästen */
     }
 
     /* Rahmen um 1–4 (A,B bis A,E = Zeile 0, Spalten 1–4) */
@@ -324,14 +320,14 @@
     /* Strichpunktierte Doppel-Linie (Hallendehnung) */
     .layout-plan-break {
       position: absolute;
-      left: -8%;                 /* über den Rahmen hinaus */
-      right: -8%;
+      left: -20%;               /* deutlich über den Rahmen hinaus */
+      right: -20%;
       height: 6%;
-      background: #f4f6fa;       /* wie Body – "schneidet" den Rahmen auf */
+      background: #f4f6fa;      /* wie Body – „schneidet“ den Rahmen auf */
       border-top: 2px dashed #6b7280;
       border-bottom: 2px dashed #6b7280;
       box-sizing: border-box;
-      z-index: 2;
+      z-index: 5;               /* ganz oben */
     }
 
     /* Zwischen B und C – leicht darunter */
@@ -384,10 +380,6 @@
     </div>
 
     <div class="result-area" id="resultArea"></div>
-
-    <div class="new-search-row" id="newSearchRow">
-      <button class="search-btn" id="newSearchBtn">Neue Suche</button>
-    </div>
   </div>
 
   <script>
@@ -418,8 +410,6 @@
     const select2 = document.getElementById("select2");
     const resultArea = document.getElementById("resultArea");
     const searchSection = document.getElementById("searchSection");
-    const newSearchRow = document.getElementById("newSearchRow");
-    const newSearchBtn = document.getElementById("newSearchBtn");
 
     const demoData = [
       {
@@ -743,7 +733,18 @@
     function showOnlyResultMode() {
       searchSection.style.display = "none";
       resultArea.style.display = "flex";
-      newSearchRow.style.display = "block";
+    }
+
+    function createNewSearchButton() {
+      const btn = document.createElement("button");
+      btn.className = "search-btn";
+      btn.textContent = "Neue Suche";
+      btn.addEventListener("click", () => {
+        searchSection.style.display = "block";
+        buildMaterialButtons();
+        clearResultArea();
+      });
+      return btn;
     }
 
     function showResults(rows, dimsDisplayShort) {
@@ -805,6 +806,9 @@
         main.appendChild(lineDiv);
         main.appendChild(shelf);
         main.appendChild(infoDiv);
+
+        // Button „Neue Suche“ direkt unter der Ergebnisausgabe
+        main.appendChild(createNewSearchButton());
 
         wrapper.appendChild(main);
 
@@ -869,6 +873,9 @@
       main.appendChild(lineDiv);
       main.appendChild(shelf);
       main.appendChild(infoDiv);
+
+      // Button „Neue Suche“ auch hier direkt darunter
+      main.appendChild(createNewSearchButton());
 
       wrapper.appendChild(main);
 
@@ -951,13 +958,6 @@
     select1.addEventListener("change", () => onSelectChange(1));
     select2.addEventListener("change", () => onSelectChange(2));
     document.getElementById("searchBtn").addEventListener("click", onSearch);
-
-    newSearchBtn.addEventListener("click", () => {
-      searchSection.style.display = "block";
-      newSearchRow.style.display = "none";
-      buildMaterialButtons();
-      clearResultArea();
-    });
 
     (function init() {
       try {
