@@ -226,6 +226,12 @@
       text-align: center;
     }
 
+    /* Zeile für "Neue Suche"-Button */
+    .new-search-row {
+      display: none;
+      margin-top: 20px;
+    }
+
     @media (min-width: 768px) {
       .app {
         max-width: 640px;
@@ -237,36 +243,45 @@
   <div class="app">
     <h1>Material Finder</h1>
 
-    <div class="top-row">
-      <button class="excel-button" id="excelBtn">
-        <span class="icon">📥</span>
-        <span>Excel importieren</span>
-      </button>
-      <div class="status-text" id="statusText">
-        Keine Excel-Daten importiert (Demo-Fallback aktiv).
+    <!-- Alles, was für die Suche nötig ist -->
+    <div id="searchSection">
+      <div class="top-row">
+        <button class="excel-button" id="excelBtn">
+          <span class="icon">📥</span>
+          <span>Excel importieren</span>
+        </button>
+        <div class="status-text" id="statusText">
+          Keine Excel-Daten importiert (Demo-Fallback aktiv).
+        </div>
+      </div>
+
+      <input type="file" id="excelInput" accept=".xlsx,.xls" style="display:none" />
+
+      <div class="materials" id="materialsContainer">
+        <!-- Buttons werden per JS aus fixer Liste erzeugt -->
+      </div>
+
+      <div class="dimension-area" id="dimensionArea">
+        <div class="dim-row-selects">
+          <div class="dim-picker">
+            <select id="select1"></select>
+          </div>
+          <div class="dim-picker">
+            <select id="select2"></select>
+          </div>
+        </div>
+        <button class="search-btn" id="searchBtn">Suchen</button>
       </div>
     </div>
 
-    <input type="file" id="excelInput" accept=".xlsx,.xls" style="display:none" />
-
-    <div class="materials" id="materialsContainer">
-      <!-- Buttons werden per JS aus fixer Liste erzeugt -->
-    </div>
-
-    <div class="dimension-area" id="dimensionArea">
-      <div class="dim-row-selects">
-        <div class="dim-picker">
-          <select id="select1"></select>
-        </div>
-        <div class="dim-picker">
-          <select id="select2"></select>
-        </div>
-      </div>
-      <button class="search-btn" id="searchBtn">Suchen</button>
-    </div>
-
+    <!-- Ergebnis-Bereich -->
     <div class="result-area" id="resultArea">
       <!-- Ergebnis-Karten werden per JS erzeugt -->
+    </div>
+
+    <!-- Unterer Button in voller Breite: NEUE SUCHE -->
+    <div class="new-search-row" id="newSearchRow">
+      <button class="search-btn" id="newSearchBtn">Neue Suche</button>
     </div>
   </div>
 
@@ -298,6 +313,9 @@
     const select1 = document.getElementById("select1");
     const select2 = document.getElementById("select2");
     const resultArea = document.getElementById("resultArea");
+    const searchSection = document.getElementById("searchSection");
+    const newSearchRow = document.getElementById("newSearchRow");
+    const newSearchBtn = document.getElementById("newSearchBtn");
 
     // Demo-Daten im neuen Format
     const demoData = [
@@ -547,6 +565,13 @@
       return { number, regalText };
     }
 
+    // Nach einer Suche: nur Ergebnis + "Neue Suche" anzeigen
+    function showOnlyResultMode() {
+      searchSection.style.display = "none";
+      resultArea.style.display = "flex";
+      newSearchRow.style.display = "block";
+    }
+
     // Ergebnis-Karten für eine Liste von Zeilen anzeigen
     function showResults(rows, dimsDisplayShort) {
       resultArea.innerHTML = "";
@@ -607,7 +632,7 @@
         resultArea.appendChild(wrapper);
       });
 
-      resultArea.style.display = "flex";
+      showOnlyResultMode();
     }
 
     // Karte für "kein Ergebnis" anzeigen
@@ -656,7 +681,7 @@
       wrapper.appendChild(infoDiv);
 
       resultArea.appendChild(wrapper);
-      resultArea.style.display = "flex";
+      showOnlyResultMode();
     }
 
     function onSearch() {
@@ -737,6 +762,13 @@
     select1.addEventListener("change", () => onSelectChange(1));
     select2.addEventListener("change", () => onSelectChange(2));
     document.getElementById("searchBtn").addEventListener("click", onSearch);
+
+    // "Neue Suche" → alles wieder wie am Anfang
+    newSearchBtn.addEventListener("click", () => {
+      searchSection.style.display = "block";
+      newSearchRow.style.display = "none";
+      buildMaterialButtons();
+    });
 
     // --- Init ---
     (function init() {
