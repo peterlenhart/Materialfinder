@@ -6,7 +6,8 @@
   <title>Material Finder</title>
 
   <!-- Favicon / Icon -->
-  <link rel="icon" type="image/png" href="materialfinder_icon.png" />
+  <link rel="icon" href="materialfinder_icon.png" type="image/png" />
+  <link rel="apple-touch-icon" href="materialfinder_icon.png" />
 
   <!-- Excel-Library von CDN -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -149,66 +150,79 @@
       justify-content: center;
     }
 
-    /* Wrapper um Karte + Text darunter */
+    /* Wrapper um komplette Ergebnisdarstellung */
     .result-wrapper {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 4px;
+      gap: 6px;
     }
 
-    /* Blaue Karte */
+    /* Blaues Quadrat mit Nummer + Fach */
     .result-card {
-      background: #0050a0; /* Blau */
-      border-radius: 24px;
+      background: #0050a0;
+      border-radius: 32px;
       width: min(40vh, 40vw);
       height: min(40vh, 40vw);
-      max-width: 230px;
-      max-height: 230px;
+      max-width: 220px;
+      max-height: 220px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 10px;
-      padding: 24px 16px 20px; /* oben etwas mehr Platz für die Kapsel */
-      color: #fff;
-      text-align: center;
-    }
-
-    .result-matnr {
-      background: #fff;
-      color: #000;
-      border-radius: 16px;
-      padding: 6px 16px;
-      font-size: 1.5rem;
-      letter-spacing: 0.2rem;
-      font-weight: bold; /* Kurz-MatNr fett */
-    }
-
-    /* Mittig: gesuchte Maße */
-    .result-dims {
-      font-size: 1.1rem;
-      font-weight: 500;
-      color: #fff;
-    }
-
-    .result-number {
+      gap: 6px;
       color: #ffd600;
-      font-weight: bold;
-      font-size: 3.4rem;
+      text-align: center;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+    }
+
+    .result-number-big {
+      font-size: 4.8rem;
+      font-weight: 900;
       line-height: 1;
     }
 
-    /* Text unterhalb des Quadrats */
     .result-fach {
-      font-size: 1.2rem;
+      font-size: 1.4rem;
+      font-weight: 700;
+    }
+
+    /* Zeile: Material + Maße (z.B. "K110 20x160") */
+    .result-line {
+      font-size: 1.1rem;
       font-weight: 600;
+      color: #000;
+      margin-top: 2px;
+    }
+
+    /* Regalfach-Balken */
+    .result-shelf {
+      margin-top: 2px;
+      background: #d1d5db;
+      border-radius: 14px;
+      padding: 6px 10px;
+      min-width: 220px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .result-shelf-inner {
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 4px 20px;
+      min-width: 90px;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: 0.15rem;
       color: #000;
     }
 
+    /* Kleine Zusatzinfo darunter (volle Materialnummer) */
     .result-info {
-      font-size: 0.85rem;
-      color: #000;
+      margin-top: 2px;
+      font-size: 0.8rem;
+      color: #444;
       text-align: center;
     }
 
@@ -534,7 +548,7 @@
     }
 
     // Ergebnis-Karten für eine Liste von Zeilen anzeigen
-    function showResults(rows, dimsDisplay) {
+    function showResults(rows, dimsDisplayShort) {
       resultArea.innerHTML = "";
 
       rows.forEach(row => {
@@ -546,29 +560,39 @@
         const wrapper = document.createElement("div");
         wrapper.className = "result-wrapper";
 
+        // Blaues Quadrat
         const card = document.createElement("div");
         card.className = "result-card";
 
-        const matDiv = document.createElement("div");
-        matDiv.className = "result-matnr";
-        matDiv.textContent = matShort || "----";
-
-        const dimsDiv = document.createElement("div");
-        dimsDiv.className = "result-dims";
-        dimsDiv.textContent = dimsDisplay || "";
-
-        const numDiv = document.createElement("div");
-        numDiv.className = "result-number";
-        numDiv.textContent = number || "-";
-
-        card.appendChild(matDiv);
-        if (dimsDisplay) card.appendChild(dimsDiv);
-        card.appendChild(numDiv);
+        const numBig = document.createElement("div");
+        numBig.className = "result-number-big";
+        numBig.textContent = number || "-";
 
         const fachDiv = document.createElement("div");
         fachDiv.className = "result-fach";
-        fachDiv.textContent = regalText;
+        fachDiv.textContent = regalText || "";
 
+        card.appendChild(numBig);
+        card.appendChild(fachDiv);
+
+        // Zeile: Material + Maße (z.B. "K110 20x160")
+        const lineDiv = document.createElement("div");
+        lineDiv.className = "result-line";
+        const matName = selectedButton || "";
+        const dimsTxt = dimsDisplayShort || "";
+        lineDiv.textContent = (matName && dimsTxt) ? `${matName} ${dimsTxt}` : (matName || dimsTxt);
+
+        // Regal-Balken
+        const shelf = document.createElement("div");
+        shelf.className = "result-shelf";
+
+        const shelfInner = document.createElement("div");
+        shelfInner.className = "result-shelf-inner";
+        shelfInner.textContent = matShort || "----";
+
+        shelf.appendChild(shelfInner);
+
+        // Info (volle Materialnummer)
         const infoDiv = document.createElement("div");
         infoDiv.className = "result-info";
         infoDiv.textContent = matFull
@@ -576,7 +600,8 @@
           : "Keine Materialnummer vorhanden";
 
         wrapper.appendChild(card);
-        wrapper.appendChild(fachDiv);
+        wrapper.appendChild(lineDiv);
+        wrapper.appendChild(shelf);
         wrapper.appendChild(infoDiv);
 
         resultArea.appendChild(wrapper);
@@ -586,7 +611,7 @@
     }
 
     // Karte für "kein Ergebnis" anzeigen
-    function showNoResult(dimsDisplay, message) {
+    function showNoResult(dimsDisplayShort, message) {
       resultArea.innerHTML = "";
 
       const wrapper = document.createElement("div");
@@ -595,32 +620,39 @@
       const card = document.createElement("div");
       card.className = "result-card";
 
-      const matDiv = document.createElement("div");
-      matDiv.className = "result-matnr";
-      matDiv.textContent = "----";
-
-      const dimsDiv = document.createElement("div");
-      dimsDiv.className = "result-dims";
-      dimsDiv.textContent = dimsDisplay || "";
-
-      const numDiv = document.createElement("div");
-      numDiv.className = "result-number";
-      numDiv.textContent = "-";
-
-      card.appendChild(matDiv);
-      if (dimsDisplay) card.appendChild(dimsDiv);
-      card.appendChild(numDiv);
+      const numBig = document.createElement("div");
+      numBig.className = "result-number-big";
+      numBig.textContent = "-";
 
       const fachDiv = document.createElement("div");
       fachDiv.className = "result-fach";
       fachDiv.textContent = "Material nicht vorhanden";
+
+      card.appendChild(numBig);
+      card.appendChild(fachDiv);
+
+      const lineDiv = document.createElement("div");
+      lineDiv.className = "result-line";
+      const matName = selectedButton || "";
+      const dimsTxt = dimsDisplayShort || "";
+      lineDiv.textContent = (matName && dimsTxt) ? `${matName} ${dimsTxt}` : (matName || dimsTxt || "");
+
+      const shelf = document.createElement("div");
+      shelf.className = "result-shelf";
+
+      const shelfInner = document.createElement("div");
+      shelfInner.className = "result-shelf-inner";
+      shelfInner.textContent = "----";
+
+      shelf.appendChild(shelfInner);
 
       const infoDiv = document.createElement("div");
       infoDiv.className = "result-info";
       infoDiv.textContent = message || "";
 
       wrapper.appendChild(card);
-      wrapper.appendChild(fachDiv);
+      wrapper.appendChild(lineDiv);
+      wrapper.appendChild(shelf);
       wrapper.appendChild(infoDiv);
 
       resultArea.appendChild(wrapper);
@@ -638,7 +670,8 @@
         return;
       }
 
-      const dimsDisplay = `${v1} x ${v2} mm`;
+      // compacte Schreibweise wie in deiner Skizze: 20x160
+      const dimsDisplayShort = `${v1}x${v2}`;
 
       const matches = [];
       for (const p of currentPairs) {
@@ -651,13 +684,12 @@
       }
 
       if (matches.length > 0) {
-        showResults(matches, dimsDisplay);
+        showResults(matches, dimsDisplayShort);
       } else {
-        showNoResult(dimsDisplay, "Material in diesen Abmessungen nicht vorhanden.");
+        showNoResult(dimsDisplayShort, "Material in diesen Abmessungen nicht vorhanden.");
       }
 
-      // Nach der Suche: Auswahl wieder neutral,
-      // so als wäre man frisch reingegangen.
+      // Nach der Suche: Auswahl wieder neutral
       selectedDim1 = null;
       selectedDim2 = null;
       fillSelect(select1, "Maß 1", currentDims, null);
