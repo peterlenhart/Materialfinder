@@ -32,6 +32,12 @@
       padding: 20px 16px 40px;
     }
 
+    h1 {
+      margin: 0 0 8px;
+      text-align: center;
+      font-size: 2rem;
+    }
+
     .top-row {
       display: flex;
       justify-content: space-between;
@@ -136,35 +142,31 @@
       cursor: pointer;
     }
 
-    /* Gesamter Ergebnisbereich (Ergebnis links + Lageplan rechts) */
-    .result-layout {
-      display: none;          /* wird erst im Ergebnis-Modus sichtbar */
-      margin-top: 24px;
-      gap: 16px;
-      justify-content: space-between;
-      align-items: flex-start;
-    }
-
     .result-area {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 6px;
-      flex: 0 0 auto;
+      margin-top: 24px;
+      display: none;
+      flex-wrap: wrap;
+      gap: 16px;
+      justify-content: center;
     }
 
+    /* Wrapper um Ergebnis + Lageplan nebeneinander */
     .result-wrapper {
       display: flex;
-      flex-direction: column;
+      flex-wrap: wrap;
       align-items: flex-start;
-      gap: 6px;
+      justify-content: center;
+      gap: 16px;
+      width: 100%;
     }
 
-    /* Überschrift nur über dem blauen Quadrat */
-    .result-title {
-      font-size: 1.6rem;
-      font-weight: 700;
-      margin: 0 0 6px 0;
+    /* Linker Block: blaues Quadrat + Texte + Button */
+    .result-main {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      max-width: 260px;
     }
 
     .result-card {
@@ -228,101 +230,114 @@
       margin-top: 2px;
       font-size: 0.8rem;
       color: #444;
-      text-align: left;
+      text-align: center;
     }
 
-    .new-search-row {
-      display: none;
-      margin-top: 20px;
+    /* --- LAGEPLAN-STYLES --- */
+
+    .layout-plan-wrapper {
+      margin-top: 4px;
+      flex: 0 0 220px;
+      max-width: 220px;
+      display: flex;
+      justify-content: center;
     }
 
-    /* --- Lageplan rechts --- */
-
-    .map-area {
-      flex: 0 0 auto;
-    }
-
-    .layout-map {
-      border: 3px solid #111827;
-      border-radius: 14px;
-      padding: 6px 10px 8px 10px;
+    .layout-plan {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 6 / 12; /* 6 Spalten, 12 Reihen */
+      border-radius: 10px;
       background: #f9fafb;
-      overflow: visible;
+      overflow: hidden;
     }
 
-    /* Oberes 4er-Regal (1–4) */
-    .map-top-row {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 2px;
-      margin-bottom: 4px;
+    /* äußerer 6x12-Rahmen (über den Zellen, damit nichts „hinaussteht“) */
+    .layout-plan::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border: 3px solid #111827; /* Anthrazit */
+      border-radius: 10px;
+      box-sizing: border-box;
+      z-index: 3;
     }
 
-    .map-cell {
-      min-width: 28px;
-      min-height: 28px;
-      border-radius: 4px;
-      background: #e5e7eb;
-      border: 1px solid #9ca3af;
+    .layout-plan-cell {
+      position: absolute;
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 0.9rem;
       font-weight: 600;
-      color: #111827;
+      border-radius: 4px;
+      box-sizing: border-box;
+      background: #e5e7eb;  /* hellgrau inaktiv */
+      color: #111827;        /* fast schwarz */
+      border: 1px solid #9ca3af;
+      z-index: 2;
     }
 
-    .map-cell--active {
-      background: #0050a0;
-      color: #ffd600;
-      border-color: #0050a0;
+    .layout-plan-cell.active {
+      background: #0050a0;  /* blau wie Ergebnisfeld */
+      color: #ffd600;       /* gelb wie große Zahl */
+      border-color: #111827;
+      box-shadow: 0 0 0 2px #111827;
     }
 
-    /* gestrichelte Trennlinien (oben & unten) – leicht über Rahmen hinaus */
-    .map-separator {
-      border-top: 2px dashed #9ca3af;
-      width: 120%;
-      margin: 6px -10%;
-    }
-
-    /* mittlerer, hohes Regal (9–12 und 13) */
-    .map-middle-wrapper {
-      display: flex;
-      justify-content: center;
-      margin: 4px 0;
-    }
-
-    .map-middle {
+    .layout-plan-frame {
+      position: absolute;
       border: 2px solid #111827;
-      border-radius: 10px;
-      padding: 4px 6px 6px 6px;
-      background: #f9fafb;
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 2px;
+      border-radius: 6px;
+      box-sizing: border-box;
+      z-index: 4; /* über den Kästen */
     }
 
-    .map-middle-bottom {
-      grid-column: 1 / span 2;
-      display: flex;
-      justify-content: center;
+    /* Rahmen um 1–4 (A,B bis A,E = Zeile 0, Spalten 1–4) */
+    .layout-plan-frame-top {
+      top: 0%;
+      left: calc(100% * 1 / 6);
+      width: calc(100% * 4 / 6);
+      height: calc(100% * 1 / 12);
     }
 
-    /* unteres Regal (16/14 oben, 17/15 unten) */
-    .map-bottom-wrapper {
-      display: flex;
-      justify-content: center;
-      margin-top: 6px;
+    /* Rahmen um 9–13 (D,C bis H,D = Zeilen 3–7, Spalten 2–3) */
+    .layout-plan-frame-middle {
+      top: calc(100% * 3 / 12);
+      left: calc(100% * 2 / 6);
+      width: calc(100% * 2 / 6);
+      height: calc(100% * 5 / 12);
     }
 
-    .map-bottom {
-      border: 2px solid #111827;
-      border-radius: 10px;
-      padding: 4px 6px 6px 6px;
-      background: #f9fafb;
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 2px;
+    /* Rahmen um 16–17–14–15 (K,C bis L,D = Zeilen 10–11, Spalten 2–3) */
+    .layout-plan-frame-bottom {
+      top: calc(100% * 10 / 12);
+      left: calc(100% * 2 / 6);
+      width: calc(100% * 2 / 6);
+      height: calc(100% * 2 / 12);
+    }
+
+    /* Strichpunktierte Doppel-Linie (Hallendehnung) */
+    .layout-plan-break {
+      position: absolute;
+      left: -20%;               /* deutlich über den Rahmen hinaus */
+      right: -20%;
+      height: 6%;
+      background: #f4f6fa;      /* wie Body – „schneidet“ den Rahmen auf */
+      border-top: 2px dashed #6b7280;
+      border-bottom: 2px dashed #6b7280;
+      box-sizing: border-box;
+      z-index: 5;               /* ganz oben */
+    }
+
+    /* Zwischen B und C – leicht darunter */
+    .layout-plan-break-top {
+      top: 15%;
+    }
+
+    /* Zwischen I und J – leicht darunter */
+    .layout-plan-break-bottom {
+      top: 74%;
     }
 
     @media (min-width: 768px) {
@@ -334,7 +349,8 @@
 </head>
 <body>
   <div class="app">
-    <!-- Suchbereich -->
+    <h1>Material Finder</h1>
+
     <div id="searchSection">
       <div class="top-row">
         <button class="excel-button" id="excelBtn">
@@ -363,62 +379,7 @@
       </div>
     </div>
 
-    <!-- Ergebnis + Lageplan nebeneinander -->
-    <div class="result-layout" id="resultLayout">
-      <!-- Linke Seite: Ergebnis-Ausgabe -->
-      <div class="result-area" id="resultArea"></div>
-
-      <!-- Rechte Seite: Lageplan -->
-      <div class="map-area">
-        <div class="layout-map">
-          <!-- oberes Regal 1–4 -->
-          <div class="map-top-row">
-            <div class="map-cell" data-platz="1">1</div>
-            <div class="map-cell" data-platz="2">2</div>
-            <div class="map-cell" data-platz="3">3</div>
-            <div class="map-cell" data-platz="4">4</div>
-          </div>
-
-          <!-- obere gestrichelte Linie -->
-          <div class="map-separator"></div>
-
-          <!-- mittlerer hoher Block: 9/5, 10/6, 11/7, 12/8 + 13 -->
-          <div class="map-middle-wrapper">
-            <div class="map-middle">
-              <div class="map-cell" data-platz="9">9</div>
-              <div class="map-cell" data-platz="5">5</div>
-              <div class="map-cell" data-platz="10">10</div>
-              <div class="map-cell" data-platz="6">6</div>
-              <div class="map-cell" data-platz="11">11</div>
-              <div class="map-cell" data-platz="7">7</div>
-              <div class="map-cell" data-platz="12">12</div>
-              <div class="map-cell" data-platz="8">8</div>
-              <div class="map-middle-bottom">
-                <div class="map-cell" data-platz="13">13</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- untere gestrichelte Linie -->
-          <div class="map-separator"></div>
-
-          <!-- unterer Block 16/14, 17/15 -->
-          <div class="map-bottom-wrapper">
-            <div class="map-bottom">
-              <div class="map-cell" data-platz="16">16</div>
-              <div class="map-cell" data-platz="14">14</div>
-              <div class="map-cell" data-platz="17">17</div>
-              <div class="map-cell" data-platz="15">15</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Neue Suche unten quer -->
-    <div class="new-search-row" id="newSearchRow">
-      <button class="search-btn" id="newSearchBtn">Neue Suche</button>
-    </div>
+    <div class="result-area" id="resultArea"></div>
   </div>
 
   <script>
@@ -442,16 +403,13 @@
     let selectedDim1 = null;
     let selectedDim2 = null;
 
-    const statusTextEl   = document.getElementById("statusText");
+    const statusTextEl = document.getElementById("statusText");
     const materialsContainer = document.getElementById("materialsContainer");
-    const dimensionArea  = document.getElementById("dimensionArea");
-    const select1        = document.getElementById("select1");
-    const select2        = document.getElementById("select2");
-    const resultLayout   = document.getElementById("resultLayout");
-    const resultArea     = document.getElementById("resultArea");
-    const searchSection  = document.getElementById("searchSection");
-    const newSearchRow   = document.getElementById("newSearchRow");
-    const newSearchBtn   = document.getElementById("newSearchBtn");
+    const dimensionArea = document.getElementById("dimensionArea");
+    const select1 = document.getElementById("select1");
+    const select2 = document.getElementById("select2");
+    const resultArea = document.getElementById("resultArea");
+    const searchSection = document.getElementById("searchSection");
 
     const demoData = [
       {
@@ -485,6 +443,85 @@
         Lagerplatz: "3.1"
       }
     ];
+
+    /* --- Lageplan-Konfiguration: Regale 1–17 auf 6x12 Raster --- */
+    const LAYOUT_SHELVES = [
+      { id: 1,  row: 0, col: 1 },      // A,B
+      { id: 2,  row: 0, col: 2 },      // A,C
+      { id: 3,  row: 0, col: 3 },      // A,D
+      { id: 4,  row: 0, col: 4 },      // A,E
+
+      { id: 9,  row: 3, col: 2 },      // D,C
+      { id: 5,  row: 3, col: 3 },      // D,D
+      { id: 10, row: 4, col: 2 },      // E,C
+      { id: 6,  row: 4, col: 3 },      // E,D
+      { id: 11, row: 5, col: 2 },      // F,C
+      { id: 7,  row: 5, col: 3 },      // F,D
+      { id: 12, row: 6, col: 2 },      // G,C
+      { id: 8,  row: 6, col: 3 },      // G,D
+
+      // 13 mittig zwischen C und D in Zeile H
+      { id: 13, row: 7, col: 2.5 },
+
+      { id: 16, row: 10, col: 2 },     // K,C
+      { id: 14, row: 10, col: 3 },     // K,D
+      { id: 17, row: 11, col: 2 },     // L,C
+      { id: 15, row: 11, col: 3 }      // L,D
+    ];
+
+    function createLayoutPlan(fieldNumber) {
+      const wrapper = document.createElement("div");
+      wrapper.className = "layout-plan-wrapper";
+
+      const plan = document.createElement("div");
+      plan.className = "layout-plan";
+
+      const cellWidth = "calc(100% / 6)";
+      const cellHeight = "calc(100% / 12)";
+
+      LAYOUT_SHELVES.forEach(shelf => {
+        const cell = document.createElement("div");
+        cell.className = "layout-plan-cell";
+        if (fieldNumber && Number(fieldNumber) === shelf.id) {
+          cell.classList.add("active");
+        }
+        cell.textContent = shelf.id;
+
+        cell.style.width = cellWidth;
+        cell.style.height = cellHeight;
+        cell.style.left = `calc(100% * ${shelf.col} / 6)`;
+        cell.style.top = `calc(100% * ${shelf.row} / 12)`;
+
+        plan.appendChild(cell);
+      });
+
+      // Rahmen 1–4
+      const frameTop = document.createElement("div");
+      frameTop.className = "layout-plan-frame layout-plan-frame-top";
+      plan.appendChild(frameTop);
+
+      // Rahmen 9–13
+      const frameMiddle = document.createElement("div");
+      frameMiddle.className = "layout-plan-frame layout-plan-frame-middle";
+      plan.appendChild(frameMiddle);
+
+      // Rahmen 16–17–14–15
+      const frameBottom = document.createElement("div");
+      frameBottom.className = "layout-plan-frame layout-plan-frame-bottom";
+      plan.appendChild(frameBottom);
+
+      // Strichpunktierte Doppel-Linien
+      const breakTop = document.createElement("div");
+      breakTop.className = "layout-plan-break layout-plan-break-top";
+      plan.appendChild(breakTop);
+
+      const breakBottom = document.createElement("div");
+      breakBottom.className = "layout-plan-break layout-plan-break-bottom";
+      plan.appendChild(breakBottom);
+
+      wrapper.appendChild(plan);
+      return wrapper;
+    }
 
     function updateStatusText() {
       if (usingExcel) {
@@ -531,6 +568,7 @@
 
     function clearResultArea() {
       resultArea.innerHTML = "";
+      resultArea.style.display = "none";
     }
 
     function buildMaterialButtons() {
@@ -551,9 +589,6 @@
         btn.addEventListener("click", () => onMaterialButtonClick(name, btn));
         materialsContainer.appendChild(btn);
       });
-
-      // Lageplan-Highlight resetten
-      highlightMapCell(null);
     }
 
     function onMaterialButtonClick(name, btnElement) {
@@ -662,8 +697,8 @@
       const lpStr = lpRaw != null ? String(lpRaw).trim() : "";
 
       if (!lpStr) {
-        const n1 = Math.floor(Math.random() * 27) + 1;
-        const n2 = Math.floor(Math.random() * 4);
+        const n1 = Math.floor(Math.random() * 17) + 1; // 1–17
+        const n2 = Math.floor(Math.random() * 4);      // 0–3
 
         const number = n1;
         let regalText;
@@ -695,21 +730,21 @@
       return { number, regalText };
     }
 
-    /* ---- Lageplan-Highlight ---- */
-    function highlightMapCell(number) {
-      const cells = document.querySelectorAll(".map-cell");
-      cells.forEach(c => c.classList.remove("map-cell--active"));
-      if (number == null) return;
-      const target = document.querySelector(`.map-cell[data-platz="${number}"]`);
-      if (target) {
-        target.classList.add("map-cell--active");
-      }
-    }
-
     function showOnlyResultMode() {
       searchSection.style.display = "none";
-      resultLayout.style.display = "flex";
-      newSearchRow.style.display = "block";
+      resultArea.style.display = "flex";
+    }
+
+    function createNewSearchButton() {
+      const btn = document.createElement("button");
+      btn.className = "search-btn";
+      btn.textContent = "Neue Suche";
+      btn.addEventListener("click", () => {
+        searchSection.style.display = "block";
+        buildMaterialButtons();
+        clearResultArea();
+      });
+      return btn;
     }
 
     function showResults(rows, dimsDisplayShort) {
@@ -724,10 +759,8 @@
         const wrapper = document.createElement("div");
         wrapper.className = "result-wrapper";
 
-        // Überschrift nur über dem blauen Quadrat
-        const title = document.createElement("h1");
-        title.className = "result-title";
-        title.textContent = "Material Finder";
+        const main = document.createElement("div");
+        main.className = "result-main";
 
         const card = document.createElement("div");
         card.className = "result-card";
@@ -769,16 +802,21 @@
           ? `Materialnummer: ${matFull}`
           : "Keine Materialnummer vorhanden";
 
-        wrapper.appendChild(title);
-        wrapper.appendChild(card);
-        wrapper.appendChild(lineDiv);
-        wrapper.appendChild(shelf);
-        wrapper.appendChild(infoDiv);
+        main.appendChild(card);
+        main.appendChild(lineDiv);
+        main.appendChild(shelf);
+        main.appendChild(infoDiv);
+
+        // Button „Neue Suche“ direkt unter der Ergebnisausgabe
+        main.appendChild(createNewSearchButton());
+
+        wrapper.appendChild(main);
+
+        // Lageplan daneben
+        const planWrapper = createLayoutPlan(Number(number));
+        wrapper.appendChild(planWrapper);
 
         resultArea.appendChild(wrapper);
-
-        // Lageplan-Highlight setzen
-        highlightMapCell(number);
       });
 
       showOnlyResultMode();
@@ -790,9 +828,8 @@
       const wrapper = document.createElement("div");
       wrapper.className = "result-wrapper";
 
-      const title = document.createElement("h1");
-      title.className = "result-title";
-      title.textContent = "Material Finder";
+      const main = document.createElement("div");
+      main.className = "result-main";
 
       const card = document.createElement("div");
       card.className = "result-card";
@@ -832,17 +869,21 @@
       infoDiv.className = "result-info";
       infoDiv.textContent = message || "";
 
-      wrapper.appendChild(title);
-      wrapper.appendChild(card);
-      wrapper.appendChild(lineDiv);
-      wrapper.appendChild(shelf);
-      wrapper.appendChild(infoDiv);
+      main.appendChild(card);
+      main.appendChild(lineDiv);
+      main.appendChild(shelf);
+      main.appendChild(infoDiv);
+
+      // Button „Neue Suche“ auch hier direkt darunter
+      main.appendChild(createNewSearchButton());
+
+      wrapper.appendChild(main);
+
+      // Lageplan ohne Hervorhebung
+      const planWrapper = createLayoutPlan(null);
+      wrapper.appendChild(planWrapper);
 
       resultArea.appendChild(wrapper);
-
-      // kein Treffer → Lageplan leeren
-      highlightMapCell(null);
-
       showOnlyResultMode();
     }
 
@@ -917,13 +958,6 @@
     select1.addEventListener("change", () => onSelectChange(1));
     select2.addEventListener("change", () => onSelectChange(2));
     document.getElementById("searchBtn").addEventListener("click", onSearch);
-
-    newSearchBtn.addEventListener("click", () => {
-      searchSection.style.display = "block";
-      resultLayout.style.display = "none";
-      newSearchRow.style.display = "none";
-      buildMaterialButtons();
-    });
 
     (function init() {
       try {
