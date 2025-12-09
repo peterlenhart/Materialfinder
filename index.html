@@ -160,7 +160,14 @@
       width: 100%;
     }
 
-    /* Linker Block: blaues Quadrat + Texte + Button */
+    /* Mehrere Ergebnis-Karten: waagrecht nebeneinander, mit Zeilenumbruch */
+    .results-column {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+    }
+
     .result-main {
       display: flex;
       flex-direction: column;
@@ -233,6 +240,12 @@
       font-size: 0.8rem;
       color: #444;
       text-align: center;
+    }
+
+    /* Button „Neue Suche“ soll eigene Zeile bekommen */
+    .results-new-search {
+      flex-basis: 100%;
+      margin-top: 8px;
     }
 
     /* --- LAGEPLAN-STYLES --- */
@@ -399,6 +412,7 @@
     let currentDims = [];
     let selectedDim1 = null;
     let selectedDim2 = null;
+    let dimLabelMap = new Map();   // numeric -> Anzeige-Text (z.B. "15,4")
 
     const statusTextEl = document.getElementById("statusText");
     const materialsContainer = document.getElementById("materialsContainer");
@@ -424,19 +438,19 @@
       },
       {
         Material: "7900001003",
-        Materialnummer: "K490 20x20x1000mm",
+        Materialnummer: "K490 20*20*1000mm",
         "Regal Säge": "7.3.2",
         Palette: ""
       },
       {
         Material: "7900002001",
-        Materialnummer: "W300 8x20x1000mm",
+        Materialnummer: "W300 8*20*1000mm",
         "Regal Säge": "",
         Palette: ""
       },
       {
         Material: "7900002002",
-        Materialnummer: "W300 10x20x1000mm",
+        Materialnummer: "W300 15,4*20,4*500mm",
         "Regal Säge": "",
         Palette: "4"
       },
@@ -476,7 +490,7 @@
       { id: 18, row: 12, col: 3 }      // M,D neu
     ];
 
-    function createLayoutPlan(fieldNumber) {
+    function createLayoutPlan(fieldNumbers) {
       const wrapper = document.createElement("div");
       wrapper.className = "layout-plan-wrapper";
 
@@ -486,10 +500,18 @@
       const cellWidth = "calc(100% / 6)";
       const cellHeight = "calc(100% / 13)";
 
+      let highlights = [];
+      if (Array.isArray(fieldNumbers)) {
+        highlights = fieldNumbers.map(n => Number(n)).filter(n => !isNaN(n));
+      } else if (fieldNumbers != null) {
+        const n = Number(fieldNumbers);
+        if (!isNaN(n)) highlights = [n];
+      }
+
       LAYOUT_SHELVES.forEach(shelf => {
         const cell = document.createElement("div");
         cell.className = "layout-plan-cell";
-        if (fieldNumber && Number(fieldNumber) === shelf.id) {
+        if (highlights.includes(shelf.id)) {
           cell.classList.add("active");
         }
         cell.textContent = shelf.id;
@@ -542,7 +564,7 @@
       return false;
     }
 
-    // Maße aus Spalte "Materialnummer" ziehen (erste a*b-Kombi)
+    // Maße aus Spalte "Materialnummer" ziehen (erste a*b-Kombi, auch mit Komma)
     function extractFirstDimPair(matBez) {
       if (!matBez) return null;
       const s = String(matBez);
@@ -551,18 +573,34 @@
         return null;
       }
 
-      const regex = /(\d+)\s*[xX*]\s*(\d+)/;
+      // Zahl oder Dezimal mit Komma/Punkt, getrennt durch x, X oder *
+      const regex = /(\d+(?:[.,]\d+)?)\s*[xX*]\s*(\d+(?:[.,]\d+)?)/;
       const match = s.match(regex);
       if (!match) return null;
 
-      const a = Number(match[1]);
-      const b = Number(match[2]);
-      if (isNaN(a) || isNaN(b)) return null;
+      const rawA = match[1]; // z.B. "15,4"
+      const rawB = match[2]; // z.B. "20,4"
 
-      return {
-        height: Math.min(a, b),
-        width: Math.max(a, b)
-      };
+      const numA = parseFloat(rawA.replace(",", "."));
+      const numB = parseFloat(rawB.replace(",", "."));
+      if (isNaN(numA) || isNaN(numB)) return null;
+
+      // Kleinere Seite ist "height"
+      if (numA <= numB) {
+        return {
+          height: numA,
+          width: numB,
+          heightLabel: rawA,
+          widthLabel: rawB
+        };
+      } else {
+        return {
+          height: numB,
+          width: numA,
+          heightLabel: rawB,
+          widthLabel: rawA
+        };
+      }
     }
 
     function setActiveButton(btn) {
@@ -582,6 +620,7 @@
       currentDims = [];
       selectedDim1 = null;
       selectedDim2 = null;
+      dimLabelMap = new Map();
       dimensionArea.style.display = "none";
       clearResultArea();
 
@@ -600,6 +639,8 @@
       setActiveButton(btnElement);
 
       currentPairs = [];
+      currentDims = [];
+      dimLabelMap = new Map();
       const dimSet = new Set();
 
       dataRows.forEach(row => {
@@ -623,6 +664,13 @@
 
         dimSet.add(dims.height);
         dimSet.add(dims.width);
+
+        if (!dimLabelMap.has(dims.height)) {
+          dimLabelMap.set(dims.height, dims.heightLabel);
+        }
+        if (!dimLabelMap.has(dims.width)) {
+          dimLabelMap.set(dims.width, dims.widthLabel);
+        }
       });
 
       currentDims = Array.from(dimSet).sort((a, b) => a - b);
@@ -652,8 +700,9 @@
 
       dims.forEach(v => {
         const opt = document.createElement("option");
-        opt.value = v;
-        opt.textContent = v;
+        opt.value = String(v);
+        const label = dimLabelMap.get(v) ?? String(v);
+        opt.textContent = label;
         selectEl.appendChild(opt);
       });
 
@@ -740,7 +789,7 @@
 
     function createNewSearchButton() {
       const btn = document.createElement("button");
-      btn.className = "search-btn";
+      btn.className = "search-btn results-new-search";
       btn.textContent = "Neue Suche";
       btn.addEventListener("click", () => {
         searchSection.style.display = "block";
@@ -753,14 +802,23 @@
     function showResults(rows, dimsDisplayShort) {
       resultArea.innerHTML = "";
 
+      const wrapper = document.createElement("div");
+      wrapper.className = "result-wrapper";
+
+      const resultsColumn = document.createElement("div");
+      resultsColumn.className = "results-column";
+
+      const highlightNumbers = [];
+
       rows.forEach(row => {
         const matFull = row["Material"] != null ? String(row["Material"]).trim() : "";
         const matShort = matFull ? matFull.slice(-4) : "----";
 
         const { number, line1, line2 } = getLagerplatzInfo(row);
-
-        const wrapper = document.createElement("div");
-        wrapper.className = "result-wrapper";
+        const nNum = parseInt(number, 10);
+        if (!isNaN(nNum)) {
+          highlightNumbers.push(nNum);
+        }
 
         const main = document.createElement("div");
         main.className = "result-main";
@@ -816,18 +874,19 @@
         main.appendChild(shelf);
         main.appendChild(infoDiv);
 
-        // Button „Neue Suche“ direkt unter der Ergebnisausgabe
-        main.appendChild(createNewSearchButton());
-
-        wrapper.appendChild(main);
-
-        const highlightNumber = parseInt(number, 10);
-        const planWrapper = createLayoutPlan(!isNaN(highlightNumber) ? highlightNumber : null);
-        wrapper.appendChild(planWrapper);
-
-        resultArea.appendChild(wrapper);
+        resultsColumn.appendChild(main);
       });
 
+      // nur EIN "Neue Suche"-Button unter allen Ergebnissen
+      resultsColumn.appendChild(createNewSearchButton());
+
+      wrapper.appendChild(resultsColumn);
+
+      // ein gemeinsamer Lageplan, alle Felder markiert
+      const planWrapper = createLayoutPlan(highlightNumbers);
+      wrapper.appendChild(planWrapper);
+
+      resultArea.appendChild(wrapper);
       showOnlyResultMode();
     }
 
@@ -836,6 +895,9 @@
 
       const wrapper = document.createElement("div");
       wrapper.className = "result-wrapper";
+
+      const resultsColumn = document.createElement("div");
+      resultsColumn.className = "results-column";
 
       const main = document.createElement("div");
       main.className = "result-main";
@@ -883,9 +945,10 @@
       main.appendChild(shelf);
       main.appendChild(infoDiv);
 
-      main.appendChild(createNewSearchButton());
+      resultsColumn.appendChild(main);
+      resultsColumn.appendChild(createNewSearchButton());
 
-      wrapper.appendChild(main);
+      wrapper.appendChild(resultsColumn);
 
       const planWrapper = createLayoutPlan(null);
       wrapper.appendChild(planWrapper);
@@ -905,7 +968,9 @@
         return;
       }
 
-      const dimsDisplayShort = `${v1}x${v2}`;
+      const d1Label = dimLabelMap.get(v1) ?? String(v1);
+      const d2Label = dimLabelMap.get(v2) ?? String(v2);
+      const dimsDisplayShort = `${d1Label} x ${d2Label}`;
 
       const matches = [];
       for (const p of currentPairs) {
