@@ -160,15 +160,15 @@
       width: 100%;
     }
 
-    /* Linker Block: Ergebnisausgabe – um 15 % verkleinert */
+    /* Linker Block: blaues Quadrat + Texte + Button */
     .result-main {
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 6px;
       max-width: 260px;
-      transform: scale(0.85);
-      transform-origin: top left;
+      transform: scale(0.85);          /* ca. 15 % kleiner */
+      transform-origin: top center;
     }
 
     .result-card {
@@ -182,7 +182,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 4px;
+      gap: 6px;
       color: #ffd600;
       text-align: center;
       box-shadow: 0 6px 16px rgba(0,0,0,0.35);
@@ -195,12 +195,6 @@
     }
 
     .result-fach {
-      font-size: 1.2rem;
-      font-weight: 700;
-    }
-
-    /* neue Zeile: Pos. X – gleiche Optik wie Fach */
-    .result-pos {
       font-size: 1.4rem;
       font-weight: 700;
     }
@@ -254,17 +248,18 @@
     .layout-plan {
       position: relative;
       width: 100%;
-      aspect-ratio: 6 / 12; /* 6 Spalten, 12 Reihen */
+      aspect-ratio: 6 / 13; /* 6 Spalten, 13 Reihen */
       border-radius: 10px;
       background: #f9fafb;
       overflow: hidden;
     }
 
+    /* äußerer 6x13-Rahmen */
     .layout-plan::before {
       content: "";
       position: absolute;
       inset: 0;
-      border: 3px solid #111827;
+      border: 3px solid #111827; /* Anthrazit */
       border-radius: 10px;
       box-sizing: border-box;
       z-index: 3;
@@ -300,27 +295,31 @@
       z-index: 4;
     }
 
+    /* Rahmen um 1–4 (A,B bis A,E = Zeile 0, Spalten 1–4) */
     .layout-plan-frame-top {
       top: 0%;
       left: calc(100% * 1 / 6);
       width: calc(100% * 4 / 6);
-      height: calc(100% * 1 / 12);
+      height: calc(100% * 1 / 13);
     }
 
+    /* Rahmen um 9–13 (D,C bis H,D = Zeilen 3–7, Spalten 2–3) */
     .layout-plan-frame-middle {
-      top: calc(100% * 3 / 12);
+      top: calc(100% * 3 / 13);
       left: calc(100% * 2 / 6);
       width: calc(100% * 2 / 6);
-      height: calc(100% * 5 / 12);
+      height: calc(100% * 5 / 13);
     }
 
+    /* Rahmen um 15–19–17–18 (K–M, Spalten C–D = Zeilen 10–12, Spalten 2–3) */
     .layout-plan-frame-bottom {
-      top: calc(100% * 10 / 12);
+      top: calc(100% * 10 / 13);
       left: calc(100% * 2 / 6);
       width: calc(100% * 2 / 6);
-      height: calc(100% * 2 / 12);
+      height: calc(100% * 3 / 13);
     }
 
+    /* Strichpunktierte Doppel-Linie (nur oben) */
     .layout-plan-break {
       position: absolute;
       left: -20%;
@@ -333,12 +332,9 @@
       z-index: 5;
     }
 
+    /* Zwischen B und C – leicht darunter */
     .layout-plan-break-top {
       top: 15%;
-    }
-
-    .layout-plan-break-bottom {
-      top: 74%;
     }
 
     @media (min-width: 768px) {
@@ -412,66 +408,72 @@
     const resultArea = document.getElementById("resultArea");
     const searchSection = document.getElementById("searchSection");
 
+    // Demo-Daten, falls keine Excel geladen
     const demoData = [
       {
         Material: "7900001001",
-        Materialnummer: "1.1730 - K945 50*175*1200mm",
-        "Regal Säge": "5.1.2",
+        Materialnummer: "K110 10x40x1000mm",
+        "Regal Säge": "5.1.1",
         Palette: ""
       },
       {
         Material: "7900001002",
-        Materialnummer: "1.1730 - K945 20*100*1200mm",
+        Materialnummer: "K110 20x50x1000mm",
         "Regal Säge": "6.2.1",
         Palette: ""
       },
       {
         Material: "7900001003",
-        Materialnummer: "1.1730 - K490 20*20*1200mm",
-        "Regal Säge": "7.3.1",
+        Materialnummer: "K490 20x20x1000mm",
+        "Regal Säge": "7.3.2",
         Palette: ""
       },
       {
         Material: "7900002001",
-        Materialnummer: "1.2343 - W300 8*20*1200mm",
-        "Regal Säge": "1.3.2",
-        Palette: ""
-      },
-      {
-        Material: "7900002002",
-        Materialnummer: "1.2343 - W300 10*20*1200mm",
+        Materialnummer: "W300 8x20x1000mm",
         "Regal Säge": "",
         Palette: ""
       },
       {
+        Material: "7900002002",
+        Materialnummer: "W300 10x20x1000mm",
+        "Regal Säge": "",
+        Palette: "4"
+      },
+      {
         Material: "7900003001",
-        Materialnummer: "TOOLOX 44 12*50*1200mm",
+        Materialnummer: "TOOLOX 12x50x1000mm",
         "Regal Säge": "3.1.1",
-        Palette: "9"
+        Palette: ""
       }
     ];
 
+    /* --- Lageplan-Konfiguration: Regale 1–19 auf 6x13-Raster --- */
     const LAYOUT_SHELVES = [
-      { id: 1,  row: 0, col: 1 },
-      { id: 2,  row: 0, col: 2 },
-      { id: 3,  row: 0, col: 3 },
-      { id: 4,  row: 0, col: 4 },
+      { id: 1,  row: 0, col: 1 },      // A,B
+      { id: 2,  row: 0, col: 2 },      // A,C
+      { id: 3,  row: 0, col: 3 },      // A,D
+      { id: 4,  row: 0, col: 4 },      // A,E
 
-      { id: 9,  row: 3, col: 2 },
-      { id: 5,  row: 3, col: 3 },
-      { id: 10, row: 4, col: 2 },
-      { id: 6,  row: 4, col: 3 },
-      { id: 11, row: 5, col: 2 },
-      { id: 7,  row: 5, col: 3 },
-      { id: 12, row: 6, col: 2 },
-      { id: 8,  row: 6, col: 3 },
+      { id: 9,  row: 3, col: 2 },      // D,C
+      { id: 5,  row: 3, col: 3 },      // D,D
+      { id: 10, row: 4, col: 2 },      // E,C
+      { id: 6,  row: 4, col: 3 },      // E,D
+      { id: 11, row: 5, col: 2 },      // F,C
+      { id: 7,  row: 5, col: 3 },      // F,D
+      { id: 12, row: 6, col: 2 },      // G,C
+      { id: 8,  row: 6, col: 3 },      // G,D
 
+      // 13 mittig zwischen C und D in Zeile H
       { id: 13, row: 7, col: 2.5 },
 
-      { id: 16, row: 10, col: 2 },
-      { id: 14, row: 10, col: 3 },
-      { id: 17, row: 11, col: 2 },
-      { id: 15, row: 11, col: 3 }
+      // unterer Block, neue Nummerierung
+      { id: 15, row: 10, col: 2 },     // K,C (ehemals 16)
+      { id: 14, row: 10, col: 3 },     // K,D
+      { id: 16, row: 11, col: 2 },     // L,C (ehemals 17)
+      { id: 19, row: 11, col: 3 },     // L,D (ehemals 15)
+      { id: 17, row: 12, col: 2 },     // M,C neu
+      { id: 18, row: 12, col: 3 }      // M,D neu
     ];
 
     function createLayoutPlan(fieldNumber) {
@@ -482,7 +484,7 @@
       plan.className = "layout-plan";
 
       const cellWidth = "calc(100% / 6)";
-      const cellHeight = "calc(100% / 12)";
+      const cellHeight = "calc(100% / 13)";
 
       LAYOUT_SHELVES.forEach(shelf => {
         const cell = document.createElement("div");
@@ -495,30 +497,30 @@
         cell.style.width = cellWidth;
         cell.style.height = cellHeight;
         cell.style.left = `calc(100% * ${shelf.col} / 6)`;
-        cell.style.top = `calc(100% * ${shelf.row} / 12)`;
+        cell.style.top = `calc(100% * ${shelf.row} / 13)`;
 
         plan.appendChild(cell);
       });
 
+      // Rahmen 1–4
       const frameTop = document.createElement("div");
       frameTop.className = "layout-plan-frame layout-plan-frame-top";
       plan.appendChild(frameTop);
 
+      // Rahmen 9–13
       const frameMiddle = document.createElement("div");
       frameMiddle.className = "layout-plan-frame layout-plan-frame-middle";
       plan.appendChild(frameMiddle);
 
+      // Rahmen 15–19–17–18
       const frameBottom = document.createElement("div");
       frameBottom.className = "layout-plan-frame layout-plan-frame-bottom";
       plan.appendChild(frameBottom);
 
+      // nur obere Doppel-Linie
       const breakTop = document.createElement("div");
       breakTop.className = "layout-plan-break layout-plan-break-top";
       plan.appendChild(breakTop);
-
-      const breakBottom = document.createElement("div");
-      breakBottom.className = "layout-plan-break layout-plan-break-bottom";
-      plan.appendChild(breakBottom);
 
       wrapper.appendChild(plan);
       return wrapper;
@@ -540,6 +542,7 @@
       return false;
     }
 
+    // Maße aus Spalte "Materialnummer" ziehen (erste a*b-Kombi)
     function extractFirstDimPair(matBez) {
       if (!matBez) return null;
       const s = String(matBez);
@@ -585,6 +588,7 @@
       MATERIAL_BUTTONS.forEach(name => {
         const btn = document.createElement("button");
         btn.className = "mat-btn";
+        btn.dataset.materialName = name;
         btn.textContent = name;
         btn.addEventListener("click", () => onMaterialButtonClick(name, btn));
         materialsContainer.appendChild(btn);
@@ -692,44 +696,41 @@
       }
     }
 
+    // neue Logik für Regal Säge / Palette
     function getLagerplatzInfo(row) {
-      const regalRaw = row["Regal Säge"];
-      const paletteRaw = row["Palette"];
+      const regRaw = row["Regal Säge"];
+      const palRaw = row["Palette"];
 
-      const regalStr = regalRaw != null ? String(regalRaw).trim() : "";
-      const paletteStr = paletteRaw != null ? String(paletteRaw).trim() : "";
+      const regStr = regRaw != null ? String(regRaw).trim() : "";
+      const palStr = palRaw != null ? String(palRaw).trim() : "";
 
-      if (paletteStr) {
-        const number = paletteStr;
-        return {
-          number,
-          label: "Palette",
-          posText: ""
-        };
-      }
+      let number = null;
+      let line1 = "";
+      let line2 = "";
 
-      if (regalStr) {
-        const parts = regalStr.split(".");
+      if (palStr) {
+        const n = parseInt(palStr, 10);
+        if (!isNaN(n)) number = n;
+        line1 = "Palette";
+        line2 = "";
+      } else if (regStr) {
+        const parts = regStr.split(".");
         const feld = parts[0] || "";
         const fach = parts[1] || "";
         const pos  = parts[2] || "";
 
-        const number = feld || "X";
-        const label = fach ? `Fach ${fach}` : "Fach -";
-        const posText = pos ? `Pos. ${pos}` : "";
+        const n = parseInt(feld, 10);
+        if (!isNaN(n)) number = n;
 
-        return {
-          number,
-          label,
-          posText
-        };
+        if (fach) line1 = `Fach ${fach}`;
+        if (pos)  line2 = `Pos. ${pos}`;
+      } else {
+        number = "X";
+        line1  = "kein Lagerplatz vergeben";
+        line2  = "";
       }
 
-      return {
-        number: "X",
-        label: "kein Lagerplatz vergeben",
-        posText: ""
-      };
+      return { number, line1, line2 };
     }
 
     function showOnlyResultMode() {
@@ -753,13 +754,10 @@
       resultArea.innerHTML = "";
 
       rows.forEach(row => {
-        let matFull = row["Material"] != null ? String(row["Material"]).trim() : "";
-        if (!matFull && row["Materialnummer"] != null) {
-          matFull = String(row["Materialnummer"]).trim();
-        }
+        const matFull = row["Material"] != null ? String(row["Material"]).trim() : "";
         const matShort = matFull ? matFull.slice(-4) : "----";
 
-        const { number, label, posText } = getLagerplatzInfo(row);
+        const { number, line1, line2 } = getLagerplatzInfo(row);
 
         const wrapper = document.createElement("div");
         wrapper.className = "result-wrapper";
@@ -772,19 +770,18 @@
 
         const numBig = document.createElement("div");
         numBig.className = "result-number-big";
-        numBig.textContent = number || "-";
+        numBig.textContent = number != null ? String(number) : "-";
+        card.appendChild(numBig);
 
         const fachDiv = document.createElement("div");
         fachDiv.className = "result-fach";
-        fachDiv.textContent = label || "";
-
-        card.appendChild(numBig);
+        fachDiv.textContent = line1 || "";
         card.appendChild(fachDiv);
 
-        if (posText) {
+        if (line2) {
           const posDiv = document.createElement("div");
-          posDiv.className = "result-pos";
-          posDiv.textContent = posText;
+          posDiv.className = "result-fach";
+          posDiv.textContent = line2;
           card.appendChild(posDiv);
         }
 
@@ -811,7 +808,7 @@
         const infoDiv = document.createElement("div");
         infoDiv.className = "result-info";
         infoDiv.textContent = matFull
-          ? `Material: ${matFull}`   // <– hier von „Materialnummer“ auf „Material“ geändert
+          ? `Material: ${matFull}`
           : "Kein Material vorhanden";
 
         main.appendChild(card);
@@ -819,12 +816,13 @@
         main.appendChild(shelf);
         main.appendChild(infoDiv);
 
+        // Button „Neue Suche“ direkt unter der Ergebnisausgabe
         main.appendChild(createNewSearchButton());
 
         wrapper.appendChild(main);
 
-        const numForPlan = Number(number);
-        const planWrapper = createLayoutPlan(Number.isFinite(numForPlan) ? numForPlan : null);
+        const highlightNumber = parseInt(number, 10);
+        const planWrapper = createLayoutPlan(!isNaN(highlightNumber) ? highlightNumber : null);
         wrapper.appendChild(planWrapper);
 
         resultArea.appendChild(wrapper);
