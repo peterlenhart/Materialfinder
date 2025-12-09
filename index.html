@@ -412,7 +412,7 @@
     let currentDims = [];
     let selectedDim1 = null;
     let selectedDim2 = null;
-    let dimLabelMap = new Map();   // numeric -> Anzeige-Text (z.B. "15,4")
+    let dimLabelMap = new Map();
 
     const statusTextEl = document.getElementById("statusText");
     const materialsContainer = document.getElementById("materialsContainer");
@@ -422,7 +422,6 @@
     const resultArea = document.getElementById("resultArea");
     const searchSection = document.getElementById("searchSection");
 
-    // Demo-Daten, falls keine Excel geladen
     const demoData = [
       {
         Material: "7900001001",
@@ -470,24 +469,22 @@
       { id: 4,  row: 0, col: 4 },      // A,E
 
       { id: 9,  row: 3, col: 2 },      // D,C
-      { id: 5,  row: 3, col: 3 },      // D,D
-      { id: 10, row: 4, col: 2 },      // E,C
-      { id: 6,  row: 4, col: 3 },      // E,D
-      { id: 11, row: 5, col: 2 },      // F,C
-      { id: 7,  row: 5, col: 3 },      // F,D
-      { id: 12, row: 6, col: 2 },      // G,C
-      { id: 8,  row: 6, col: 3 },      // G,D
+      { id: 8,  row: 3, col: 3 },      // D,D  (OBEN: 8)
+      { id:10, row: 4, col: 2 },      // E,C
+      { id: 7,  row: 4, col: 3 },      // E,D  (danach 7)
+      { id:11, row: 5, col: 2 },      // F,C
+      { id: 6,  row: 5, col: 3 },      // F,D  (danach 6)
+      { id:12, row: 6, col: 2 },      // G,C
+      { id: 5,  row: 6, col: 3 },      // G,D  (UNTEN: 5)
 
-      // 13 mittig zwischen C und D in Zeile H
-      { id: 13, row: 7, col: 2.5 },
+      { id: 13, row: 7, col: 2.5 },   // mittig
 
-      // unterer Block, neue Nummerierung
-      { id: 15, row: 10, col: 2 },     // K,C (ehemals 16)
-      { id: 14, row: 10, col: 3 },     // K,D
-      { id: 16, row: 11, col: 2 },     // L,C (ehemals 17)
-      { id: 19, row: 11, col: 3 },     // L,D (ehemals 15)
-      { id: 17, row: 12, col: 2 },     // M,C neu
-      { id: 18, row: 12, col: 3 }      // M,D neu
+      { id: 15, row: 10, col: 2 },    // K,C
+      { id: 14, row: 10, col: 3 },    // K,D
+      { id: 16, row: 11, col: 2 },    // L,C
+      { id: 19, row: 11, col: 3 },    // L,D
+      { id: 17, row: 12, col: 2 },    // M,C
+      { id: 18, row: 12, col: 3 }     // M,D
     ];
 
     function createLayoutPlan(fieldNumbers) {
@@ -524,22 +521,18 @@
         plan.appendChild(cell);
       });
 
-      // Rahmen 1–4
       const frameTop = document.createElement("div");
       frameTop.className = "layout-plan-frame layout-plan-frame-top";
       plan.appendChild(frameTop);
 
-      // Rahmen 9–13
       const frameMiddle = document.createElement("div");
       frameMiddle.className = "layout-plan-frame layout-plan-frame-middle";
       plan.appendChild(frameMiddle);
 
-      // Rahmen 15–19–17–18
       const frameBottom = document.createElement("div");
       frameBottom.className = "layout-plan-frame layout-plan-frame-bottom";
       plan.appendChild(frameBottom);
 
-      // nur obere Doppel-Linie
       const breakTop = document.createElement("div");
       breakTop.className = "layout-plan-break layout-plan-break-top";
       plan.appendChild(breakTop);
@@ -564,7 +557,6 @@
       return false;
     }
 
-    // Maße aus Spalte "Materialnummer" ziehen (erste a*b-Kombi, auch mit Komma)
     function extractFirstDimPair(matBez) {
       if (!matBez) return null;
       const s = String(matBez);
@@ -573,19 +565,17 @@
         return null;
       }
 
-      // Zahl oder Dezimal mit Komma/Punkt, getrennt durch x, X oder *
       const regex = /(\d+(?:[.,]\d+)?)\s*[xX*]\s*(\d+(?:[.,]\d+)?)/;
       const match = s.match(regex);
       if (!match) return null;
 
-      const rawA = match[1]; // z.B. "15,4"
-      const rawB = match[2]; // z.B. "20,4"
+      const rawA = match[1];
+      const rawB = match[2];
 
       const numA = parseFloat(rawA.replace(",", "."));
       const numB = parseFloat(rawB.replace(",", "."));
       if (isNaN(numA) || isNaN(numB)) return null;
 
-      // Kleinere Seite ist "height"
       if (numA <= numB) {
         return {
           height: numA,
@@ -745,7 +735,6 @@
       }
     }
 
-    // neue Logik für Regal Säge / Palette
     function getLagerplatzInfo(row) {
       const regRaw = row["Regal Säge"];
       const palRaw = row["Palette"];
@@ -877,12 +866,10 @@
         resultsColumn.appendChild(main);
       });
 
-      // nur EIN "Neue Suche"-Button unter allen Ergebnissen
       resultsColumn.appendChild(createNewSearchButton());
 
       wrapper.appendChild(resultsColumn);
 
-      // ein gemeinsamer Lageplan, alle Felder markiert
       const planWrapper = createLayoutPlan(highlightNumbers);
       wrapper.appendChild(planWrapper);
 
