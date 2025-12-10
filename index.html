@@ -358,6 +358,44 @@
   </style>
 </head>
 <body>
+
+  <!-- Sicherheitscode-Schutz -->
+  <script>
+    (function () {
+      const CODE = "SägeBO"; // <- Hier kannst du bei Bedarf deinen Wunsch-Code einsetzen
+      const ACCESS_KEY = "materialFinderAccessOk";
+
+      try {
+        const ok = localStorage.getItem(ACCESS_KEY);
+        if (ok === "true") {
+          window.materialFinderAccessGranted = true;
+          return;
+        }
+
+        const eingabe = prompt("Bitte Sicherheitscode für den Material Finder eingeben:");
+
+        if (eingabe === CODE) {
+          localStorage.setItem(ACCESS_KEY, "true");
+          window.materialFinderAccessGranted = true;
+        } else {
+          window.materialFinderAccessGranted = false;
+          document.body.innerHTML = "";
+          alert("Zugriff verweigert.");
+        }
+      } catch (e) {
+        // Falls localStorage geblockt ist → jedes Mal nach Code fragen
+        const eingabe = prompt("Bitte Sicherheitscode für den Material Finder eingeben:");
+        if (eingabe === CODE) {
+          window.materialFinderAccessGranted = true;
+        } else {
+          window.materialFinderAccessGranted = false;
+          document.body.innerHTML = "";
+          alert("Zugriff verweigert.");
+        }
+      }
+    })();
+  </script>
+
   <div class="app">
     <h1>Material Finder</h1>
 
@@ -393,6 +431,11 @@
   </div>
 
   <script>
+    // Wenn der Sicherheitscode nicht korrekt war, App-Script abbrechen
+    if (!window.materialFinderAccessGranted) {
+      throw new Error("Kein Zugriff auf Material Finder (Sicherheitscode falsch oder abgebrochen).");
+    }
+
     const STORAGE_KEY = "materialFinderDataV2";
 
     const MATERIAL_BUTTONS = [
