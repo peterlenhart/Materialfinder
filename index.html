@@ -350,6 +350,31 @@
       top: 15%;
     }
 
+    /* >>> NEU: „Du bist hier“-Pin (Computerstandplatz) im Quadranten CA <<< */
+    .layout-plan-standpoint {
+      position: absolute;
+      /* leicht links außerhalb des Rahmens, ungefähr auf Höhe des Bruchs */
+      left: -5%;
+      top: 18%;
+      width: 10%;
+      aspect-ratio: 1 / 1;
+      background: #111827;
+      border-radius: 50%;
+      z-index: 6;
+    }
+
+    .layout-plan-standpoint::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 60%;
+      transform: translateX(-50%) rotate(45deg);
+      width: 55%;
+      height: 55%;
+      background: #111827;
+      border-radius: 2px;
+    }
+
     @media (min-width: 768px) {
       .app {
         max-width: 640px;
@@ -579,6 +604,11 @@
       const breakTop = document.createElement("div");
       breakTop.className = "layout-plan-break layout-plan-break-top";
       plan.appendChild(breakTop);
+
+      /* >>> NEU: Navi-Pin für Computerstandplatz (Quadrant CA, links außen) <<< */
+      const stand = document.createElement("div");
+      stand.className = "layout-plan-standpoint";
+      plan.appendChild(stand);
 
       wrapper.appendChild(plan);
       return wrapper;
