@@ -350,7 +350,7 @@
       top: 15%;
     }
 
-    /* „Du bist hier“-Pin (Computerstandplatz, Quadrant CA links außen) */
+    /* „Du bist hier“-Pin (Computerstandplatz) im Quadranten CA */
     .layout-plan-standpoint {
       position: absolute;
       left: -5%;
@@ -386,7 +386,7 @@
   <!-- Sicherheitscode-Schutz -->
   <script>
     (function () {
-      const CODE = "SägeBO";
+      const CODE = "SägeBO"; // Sicherheitscode anpassbar
       const ACCESS_KEY = "materialFinderAccessOk";
 
       try {
@@ -454,7 +454,6 @@
   </div>
 
   <script>
-    // Wenn der Sicherheitscode nicht korrekt war, App-Script abbrechen
     if (!window.materialFinderAccessGranted) {
       throw new Error("Kein Zugriff auf Material Finder (Sicherheitscode falsch oder abgebrochen).");
     }
@@ -468,7 +467,7 @@
       "K490",
       "Tenasteel",
       "Toolox",
-      "S790"        // NEU
+      "S790"        // <- neu
     ];
 
     let dataRows = [];
@@ -536,29 +535,50 @@
 
     /* --- Lageplan-Konfiguration: Regale 1–19 auf 6x13-Raster --- */
     const LAYOUT_SHELVES = [
-      { id: 1,  row: 0, col: 1 },      // A,B
-      { id: 2,  row: 0, col: 2 },      // A,C
-      { id: 3,  row: 0, col: 3 },      // A,D
-      { id: 4,  row: 0, col: 4 },      // A,E
+      { id: 1,  row: 0, col: 1 },
+      { id: 2,  row: 0, col: 2 },
+      { id: 3,  row: 0, col: 3 },
+      { id: 4,  row: 0, col: 4 },
 
-      { id: 9,  row: 3, col: 2 },      // D,C
-      { id: 8,  row: 3, col: 3 },      // D,D
-      { id:10, row: 4, col: 2 },      // E,C
-      { id: 7,  row: 4, col: 3 },      // E,D
-      { id:11, row: 5, col: 2 },      // F,C
-      { id: 6,  row: 5, col: 3 },      // F,D
-      { id:12, row: 6, col: 2 },      // G,C
-      { id: 5,  row: 6, col: 3 },      // G,D
+      { id: 9,  row: 3, col: 2 },
+      { id: 8,  row: 3, col: 3 },
+      { id:10, row: 4, col: 2 },
+      { id: 7,  row: 4, col: 3 },
+      { id:11, row: 5, col: 2 },
+      { id: 6,  row: 5, col: 3 },
+      { id:12, row: 6, col: 2 },
+      { id: 5,  row: 6, col: 3 },
 
-      { id: 13, row: 7, col: 2.5 },   // mittig
+      { id: 13, row: 7, col: 2.5 },
 
-      { id: 15, row: 10, col: 2 },    // K,C
-      { id: 14, row: 10, col: 3 },    // K,D
-      { id: 16, row: 11, col: 2 },    // L,C
-      { id: 19, row: 11, col: 3 },    // L,D
-      { id: 17, row: 12, col: 2 },    // M,C
-      { id: 18, row: 12, col: 3 }     // M,D
+      { id: 15, row: 10, col: 2 },
+      { id: 14, row: 10, col: 3 },
+      { id: 16, row: 11, col: 2 },
+      { id: 19, row: 11, col: 3 },
+      { id: 17, row: 12, col: 2 },
+      { id: 18, row: 12, col: 3 }
     ];
+
+    /* --- NEU: Material-Filter-Funktion,
+           damit „Toolox“-Button auch „TOOLO* 33/44“ findet --- */
+    function materialMatchesButton(mbStr, buttonName) {
+      const lower = mbStr.toLowerCase();
+      const bName = buttonName.toLowerCase();
+
+      if (bName === "toolox") {
+        // Alles, was offensichtlich Toolox ist:
+        return (
+          lower.includes("toolox") ||
+          lower.includes("toolo* 33") ||
+          lower.includes("toolo*33") ||
+          lower.includes("toolo* 44") ||
+          lower.includes("toolo*44")
+        );
+      }
+
+      // Standardfall: einfacher includes-Check
+      return lower.includes(bName);
+    }
 
     function createLayoutPlan(fieldNumbers) {
       const wrapper = document.createElement("div");
@@ -634,35 +654,24 @@
       return false;
     }
 
-    // >>> Angepasst: Toolox 33/44 – nur Maße NACH "TOOLO* 33"/"TOOLO* 44" verwenden
     function extractFirstDimPair(matBez) {
       if (!matBez) return null;
       let s = String(matBez);
+
+      // Bei Toolox-Texten erst NACH "TOOLO* 33/44" die Maße betrachten
+      const markerRegex = /toolo\*\s*33|toolo\*\s*44/i;
+      const markerMatch = s.match(markerRegex);
+      if (markerMatch) {
+        const idx = markerMatch.index + markerMatch[0].length;
+        s = s.slice(idx);
+      }
 
       if (hasDurchmesser(s)) {
         return null;
       }
 
-      // Großschreibung für Suche
-      const upper = s.toUpperCase();
-      const marker44 = "TOOLO* 44";
-      const marker33 = "TOOLO* 33";
-
-      let startIndex = -1;
-      const idx44 = upper.indexOf(marker44);
-      const idx33 = upper.indexOf(marker33);
-
-      if (idx44 !== -1) {
-        startIndex = idx44 + marker44.length;
-      } else if (idx33 !== -1) {
-        startIndex = idx33 + marker33.length;
-      }
-
-      // Wenn Toolox-Zeile → Maße nur nach dieser Bezeichnung suchen
-      let searchStr = (startIndex !== -1) ? s.slice(startIndex) : s;
-
       const regex = /(\d+(?:[.,]\d+)?)\s*[xX*]\s*(\d+(?:[.,]\d+)?)/;
-      const match = searchStr.match(regex);
+      const match = s.match(regex);
       if (!match) return null;
 
       const rawA = match[1];
@@ -735,7 +744,8 @@
 
         const mbStr = String(mb);
 
-        if (!mbStr.toLowerCase().includes(name.toLowerCase())) {
+        // <<< HIER wird jetzt die neue Matching-Funktion verwendet
+        if (!materialMatchesButton(mbStr, name)) {
           return;
         }
 
@@ -831,59 +841,35 @@
       }
     }
 
-    /** LOGIK für Spalte "K":
-     *  K  → K (groß), "Keller"
-     *  X  → keine große Zahl, "Läuft aus, kein Lagerplatz vergeben"
-     *  KX/XK → K (groß), "Keller, läuft aus"
-     *  ansonsten normale Regal/Palette-Logik
-     */
     function getLagerplatzInfo(row) {
+      const kRaw = row["K"];
       const regRaw = row["Regal Säge"];
       const palRaw = row["Palette"];
-      const kRaw   = row["K"];
 
+      const kStr = kRaw != null ? String(kRaw).trim().toUpperCase() : "";
       const regStr = regRaw != null ? String(regRaw).trim() : "";
       const palStr = palRaw != null ? String(palRaw).trim() : "";
-      const kStr   = kRaw  != null ? String(kRaw).trim().toUpperCase() : "";
+
+      // K-Sonderlogik (Keller / läuft aus)
+      if (kStr === "KX" || kStr === "XK") {
+        return { number: "K", line1: "Keller, läuft aus", line2: "" };
+      }
+      if (kStr === "K") {
+        return { number: "K", line1: "Keller", line2: "" };
+      }
+      if (kStr === "X") {
+        return { number: "", line1: "Läuft aus, kein Lagerplatz vergeben", line2: "" };
+      }
 
       let number = null;
       let line1 = "";
       let line2 = "";
 
-      // 1) Sonderfälle K-Spalte
-      if (kStr) {
-        if (kStr === "K") {
-          number = "K";
-          line1 = "Keller";
-          line2 = "";
-          return { number, line1, line2 };
-        }
-        if (kStr === "X") {
-          number = "";
-          line1 = "Läuft aus, kein Lagerplatz vergeben";
-          line2 = "";
-          return { number, line1, line2 };
-        }
-        if (kStr === "KX" || kStr === "XK") {
-          number = "K";
-          line1 = "Keller, läuft aus";
-          line2 = "";
-          return { number, line1, line2 };
-        }
-        // sonst → weiter mit normaler Logik
-      }
-
-      // 2) Palette hat Vorrang
       if (palStr) {
         const n = parseInt(palStr, 10);
         if (!isNaN(n)) number = n;
         line1 = "Palette";
-        line2 = "";
-        return { number, line1, line2 };
-      }
-
-      // 3) Normaler Regal-Säge Eintrag
-      if (regStr) {
+      } else if (regStr) {
         const parts = regStr.split(".");
         const feld = parts[0] || "";
         const fach = parts[1] || "";
@@ -894,13 +880,11 @@
 
         if (fach) line1 = `Fach ${fach}`;
         if (pos)  line2 = `Pos. ${pos}`;
-        return { number, line1, line2 };
+      } else {
+        number = "X";
+        line1  = "kein Lagerplatz vergeben";
       }
 
-      // 4) Weder K, noch Palette, noch Regal Säge → kein Lagerplatz vergeben
-      number = "X";
-      line1  = "kein Lagerplatz vergeben";
-      line2  = "";
       return { number, line1, line2 };
     }
 
@@ -950,12 +934,7 @@
 
         const numBig = document.createElement("div");
         numBig.className = "result-number-big";
-
-        if (number !== null && number !== undefined && String(number).trim() !== "") {
-          numBig.textContent = String(number);
-        } else {
-          numBig.textContent = "";
-        }
+        numBig.textContent = number != null ? String(number) : "-";
         card.appendChild(numBig);
 
         const fachDiv = document.createElement("div");
