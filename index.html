@@ -468,7 +468,7 @@
       "K490",
       "Tenasteel",
       "Toolox",
-      "S790"        // << NEU
+      "S790"        // NEU
     ];
 
     let dataRows = [];
@@ -527,7 +527,7 @@
       },
       {
         Material: "7900003001",
-        Materialnummer: "TOOLOX 12x50x1000mm",
+        Materialnummer: "TOOLO* 44 12*50*1000mm",
         "Regal Säge": "3.1.1",
         Palette: "",
         K: ""
@@ -634,16 +634,35 @@
       return false;
     }
 
+    // >>> Angepasst: Toolox 33/44 – nur Maße NACH "TOOLO* 33"/"TOOLO* 44" verwenden
     function extractFirstDimPair(matBez) {
       if (!matBez) return null;
-      const s = String(matBez);
+      let s = String(matBez);
 
       if (hasDurchmesser(s)) {
         return null;
       }
 
+      // Großschreibung für Suche
+      const upper = s.toUpperCase();
+      const marker44 = "TOOLO* 44";
+      const marker33 = "TOOLO* 33";
+
+      let startIndex = -1;
+      const idx44 = upper.indexOf(marker44);
+      const idx33 = upper.indexOf(marker33);
+
+      if (idx44 !== -1) {
+        startIndex = idx44 + marker44.length;
+      } else if (idx33 !== -1) {
+        startIndex = idx33 + marker33.length;
+      }
+
+      // Wenn Toolox-Zeile → Maße nur nach dieser Bezeichnung suchen
+      let searchStr = (startIndex !== -1) ? s.slice(startIndex) : s;
+
       const regex = /(\d+(?:[.,]\d+)?)\s*[xX*]\s*(\d+(?:[.,]\d+)?)/;
-      const match = s.match(regex);
+      const match = searchStr.match(regex);
       if (!match) return null;
 
       const rawA = match[1];
@@ -812,7 +831,7 @@
       }
     }
 
-    /** NEUE LOGIK für Spalte "K":
+    /** LOGIK für Spalte "K":
      *  K  → K (groß), "Keller"
      *  X  → keine große Zahl, "Läuft aus, kein Lagerplatz vergeben"
      *  KX/XK → K (groß), "Keller, läuft aus"
@@ -840,7 +859,7 @@
           return { number, line1, line2 };
         }
         if (kStr === "X") {
-          number = ""; // große Zahl entfällt
+          number = "";
           line1 = "Läuft aus, kein Lagerplatz vergeben";
           line2 = "";
           return { number, line1, line2 };
@@ -851,7 +870,7 @@
           line2 = "";
           return { number, line1, line2 };
         }
-        // falls anderer Eintrag in K, weiter mit "normaler" Logik
+        // sonst → weiter mit normaler Logik
       }
 
       // 2) Palette hat Vorrang
@@ -932,7 +951,6 @@
         const numBig = document.createElement("div");
         numBig.className = "result-number-big";
 
-        // große Zahl/ Buchstabe nur anzeigen, wenn nicht leer
         if (number !== null && number !== undefined && String(number).trim() !== "") {
           numBig.textContent = String(number);
         } else {
