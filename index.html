@@ -350,10 +350,9 @@
       top: 15%;
     }
 
-    /* >>> NEU: „Du bist hier“-Pin (Computerstandplatz) im Quadranten CA <<< */
+    /* „Du bist hier“-Pin (Computerstandplatz, Quadrant CA links außen) */
     .layout-plan-standpoint {
       position: absolute;
-      /* leicht links außerhalb des Rahmens, ungefähr auf Höhe des Bruchs */
       left: -5%;
       top: 18%;
       width: 10%;
@@ -387,7 +386,7 @@
   <!-- Sicherheitscode-Schutz -->
   <script>
     (function () {
-      const CODE = "SägeBO"; // <- Hier kannst du bei Bedarf deinen Wunsch-Code einsetzen
+      const CODE = "SägeBO";
       const ACCESS_KEY = "materialFinderAccessOk";
 
       try {
@@ -408,7 +407,6 @@
           alert("Zugriff verweigert.");
         }
       } catch (e) {
-        // Falls localStorage geblockt ist → jedes Mal nach Code fragen
         const eingabe = prompt("Bitte Sicherheitscode für den Material Finder eingeben:");
         if (eingabe === CODE) {
           window.materialFinderAccessGranted = true;
@@ -469,7 +467,8 @@
       "K945",
       "K490",
       "Tenasteel",
-      "Toolox"
+      "Toolox",
+      "S790"        // << NEU
     ];
 
     let dataRows = [];
@@ -495,37 +494,43 @@
         Material: "7900001001",
         Materialnummer: "K110 10x40x1000mm",
         "Regal Säge": "5.1.1",
-        Palette: ""
+        Palette: "",
+        K: ""
       },
       {
         Material: "7900001002",
         Materialnummer: "K110 20x50x1000mm",
         "Regal Säge": "6.2.1",
-        Palette: ""
+        Palette: "",
+        K: ""
       },
       {
         Material: "7900001003",
         Materialnummer: "K490 20*20*1000mm",
         "Regal Säge": "7.3.2",
-        Palette: ""
+        Palette: "",
+        K: ""
       },
       {
         Material: "7900002001",
         Materialnummer: "W300 8*20*1000mm",
         "Regal Säge": "",
-        Palette: ""
+        Palette: "",
+        K: ""
       },
       {
         Material: "7900002002",
         Materialnummer: "W300 15,4*20,4*500mm",
         "Regal Säge": "",
-        Palette: "4"
+        Palette: "4",
+        K: ""
       },
       {
         Material: "7900003001",
         Materialnummer: "TOOLOX 12x50x1000mm",
         "Regal Säge": "3.1.1",
-        Palette: ""
+        Palette: "",
+        K: ""
       }
     ];
 
@@ -537,13 +542,13 @@
       { id: 4,  row: 0, col: 4 },      // A,E
 
       { id: 9,  row: 3, col: 2 },      // D,C
-      { id: 8,  row: 3, col: 3 },      // D,D  (OBEN: 8)
+      { id: 8,  row: 3, col: 3 },      // D,D
       { id:10, row: 4, col: 2 },      // E,C
-      { id: 7,  row: 4, col: 3 },      // E,D  (danach 7)
+      { id: 7,  row: 4, col: 3 },      // E,D
       { id:11, row: 5, col: 2 },      // F,C
-      { id: 6,  row: 5, col: 3 },      // F,D  (danach 6)
+      { id: 6,  row: 5, col: 3 },      // F,D
       { id:12, row: 6, col: 2 },      // G,C
-      { id: 5,  row: 6, col: 3 },      // G,D  (UNTEN: 5)
+      { id: 5,  row: 6, col: 3 },      // G,D
 
       { id: 13, row: 7, col: 2.5 },   // mittig
 
@@ -605,7 +610,6 @@
       breakTop.className = "layout-plan-break layout-plan-break-top";
       plan.appendChild(breakTop);
 
-      /* >>> NEU: Navi-Pin für Computerstandplatz (Quadrant CA, links außen) <<< */
       const stand = document.createElement("div");
       stand.className = "layout-plan-standpoint";
       plan.appendChild(stand);
@@ -808,23 +812,59 @@
       }
     }
 
+    /** NEUE LOGIK für Spalte "K":
+     *  K  → K (groß), "Keller"
+     *  X  → keine große Zahl, "Läuft aus, kein Lagerplatz vergeben"
+     *  KX/XK → K (groß), "Keller, läuft aus"
+     *  ansonsten normale Regal/Palette-Logik
+     */
     function getLagerplatzInfo(row) {
       const regRaw = row["Regal Säge"];
       const palRaw = row["Palette"];
+      const kRaw   = row["K"];
 
       const regStr = regRaw != null ? String(regRaw).trim() : "";
       const palStr = palRaw != null ? String(palRaw).trim() : "";
+      const kStr   = kRaw  != null ? String(kRaw).trim().toUpperCase() : "";
 
       let number = null;
       let line1 = "";
       let line2 = "";
 
+      // 1) Sonderfälle K-Spalte
+      if (kStr) {
+        if (kStr === "K") {
+          number = "K";
+          line1 = "Keller";
+          line2 = "";
+          return { number, line1, line2 };
+        }
+        if (kStr === "X") {
+          number = ""; // große Zahl entfällt
+          line1 = "Läuft aus, kein Lagerplatz vergeben";
+          line2 = "";
+          return { number, line1, line2 };
+        }
+        if (kStr === "KX" || kStr === "XK") {
+          number = "K";
+          line1 = "Keller, läuft aus";
+          line2 = "";
+          return { number, line1, line2 };
+        }
+        // falls anderer Eintrag in K, weiter mit "normaler" Logik
+      }
+
+      // 2) Palette hat Vorrang
       if (palStr) {
         const n = parseInt(palStr, 10);
         if (!isNaN(n)) number = n;
         line1 = "Palette";
         line2 = "";
-      } else if (regStr) {
+        return { number, line1, line2 };
+      }
+
+      // 3) Normaler Regal-Säge Eintrag
+      if (regStr) {
         const parts = regStr.split(".");
         const feld = parts[0] || "";
         const fach = parts[1] || "";
@@ -835,12 +875,13 @@
 
         if (fach) line1 = `Fach ${fach}`;
         if (pos)  line2 = `Pos. ${pos}`;
-      } else {
-        number = "X";
-        line1  = "kein Lagerplatz vergeben";
-        line2  = "";
+        return { number, line1, line2 };
       }
 
+      // 4) Weder K, noch Palette, noch Regal Säge → kein Lagerplatz vergeben
+      number = "X";
+      line1  = "kein Lagerplatz vergeben";
+      line2  = "";
       return { number, line1, line2 };
     }
 
@@ -890,7 +931,13 @@
 
         const numBig = document.createElement("div");
         numBig.className = "result-number-big";
-        numBig.textContent = number != null ? String(number) : "-";
+
+        // große Zahl/ Buchstabe nur anzeigen, wenn nicht leer
+        if (number !== null && number !== undefined && String(number).trim() !== "") {
+          numBig.textContent = String(number);
+        } else {
+          numBig.textContent = "";
+        }
         card.appendChild(numBig);
 
         const fachDiv = document.createElement("div");
