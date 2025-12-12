@@ -67,62 +67,6 @@
       flex: 1;
     }
 
-    /* --- SAP Suche --- */
-    .sap-search {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin: 12px 0 4px;
-    }
-
-    .sap-icon {
-      width: 28px;
-      height: 28px;
-      flex: 0 0 28px;
-      display: block;
-    }
-
-    .sap-col {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      min-width: 0;
-    }
-
-    .sap-label {
-      font-size: 0.9rem;
-      color: #333;
-      font-weight: 600;
-    }
-
-    .sap-row {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-
-    .sap-input {
-      flex: 1;
-      padding: 10px 12px;
-      font-size: 1.05rem;
-      border-radius: 12px;
-      border: 1px solid #cdd4e0;
-      background: #ffffff;
-      min-width: 0;
-    }
-
-    .sap-btn {
-      padding: 10px 14px;
-      border-radius: 12px;
-      border: none;
-      background: #0050a0;
-      color: #fff;
-      cursor: pointer;
-      font-size: 1.05rem;
-      white-space: nowrap;
-    }
-
     .materials {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
@@ -142,10 +86,77 @@
 
     .mat-btn.active { background: #0050a0; }
 
-    .dimension-area {
-      margin-top: 8px;
+    /* --- SAP Suche --- */
+    .sap-search-wrap {
+      margin: 6px 0 12px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: #eef2f7;
+      border: 1px solid #cdd4e0;
+      display: grid;
+      grid-template-columns: 26px 1fr;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .sap-search-wrap img {
+      width: 22px;
+      height: 22px;
+      display: block;
+    }
+
+    .sap-search-col { display: grid; gap: 6px; }
+
+    .sap-search-label {
+      font-size: 0.85rem;
+      color: #374151;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .sap-search-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .sap-input {
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 1.05rem;
+      border-radius: 12px;
+      border: 1px solid #cdd4e0;
+      background: #fff;
+      outline: none;
+    }
+
+    .sap-go-btn {
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: none;
+      background: #0050a0;
+      color: #fff;
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .sap-hint {
+      font-size: 0.8rem;
+      color: #6b7280;
+      margin: 0;
+    }
+
+    .sap-error {
+      font-size: 0.9rem;
+      font-weight: 800;
+      color: #b91c1c;
+      margin: 0;
       display: none;
     }
+
+    .dimension-area { margin-top: 8px; display: none; }
 
     .dim-row-selects {
       display: grid;
@@ -468,21 +479,16 @@
       <input type="file" id="excelInput" accept=".xlsx,.xls" style="display:none" />
 
       <!-- SAP Suche -->
-      <div class="sap-search">
-        <img class="sap-icon" src="materialfinder_icon.png" alt="icon" />
-        <div class="sap-col">
-          <div class="sap-label">Nach SAP-Nummer suchen.</div>
-          <div class="sap-row">
-            <input
-              id="sapSearchInput"
-              class="sap-input"
-              type="text"
-              inputmode="numeric"
-              value="790000****"
-              autocomplete="off"
-            />
-            <button id="sapSearchBtn" class="sap-btn">Suchen</button>
+      <div class="sap-search-wrap">
+        <img src="materialfinder_icon.png" alt="Icon" />
+        <div class="sap-search-col">
+          <p class="sap-search-label">Nach SAP-Nummer suchen</p>
+          <div class="sap-search-row">
+            <input id="sapSearchInput" class="sap-input" type="text" value="790000****" />
+            <button id="sapSearchBtn" class="sap-go-btn">Suchen</button>
           </div>
+          <p id="sapError" class="sap-error">10-stellig!</p>
+          <p class="sap-hint">Letzte 4 Stellen ergänzen oder ganze 10-stellige Nummer eingeben.</p>
         </div>
       </div>
 
@@ -542,14 +548,17 @@
 
     const sapSearchInput = document.getElementById("sapSearchInput");
     const sapSearchBtn = document.getElementById("sapSearchBtn");
+    const sapError = document.getElementById("sapError");
 
     const demoData = [
       { Material: "7900001001", Materialnummer: "K110 10x40x1000mm", "Regal Säge": "5.1.1", K: "" },
-      { Material: "7900002002", Materialnummer: "W300 15,4*20,4*500mm", "Regal Säge": "4", K: "" },
-      { Material: "7900003001", Materialnummer: "TOOLO* 44 12*50*1000mm", "Regal Säge": "3.1.1", K: "" },
-      { Material: "7900009999", Materialnummer: "W300 8*20*1000mm", "Regal Säge": "", K: "" } // wird ignoriert
+      { Material: "7900001002", Materialnummer: "K110 20x50x1000mm", "Regal Säge": "6.2.1", K: "" },
+      { Material: "7900001003", Materialnummer: "K490 20*20*1000mm", "Regal Säge": "7.3.2", K: "" },
+      { Material: "7900002002", Materialnummer: "W300 15,4*20,4*500mm", "Regal Säge": "4", K: "" },         /* Palette via Regal Säge */
+      { Material: "7900003001", Materialnummer: "TOOLO* 44 12*50*1000mm", "Regal Säge": "3.1.1", K: "" }
     ];
 
+    /* --- Lageplan-Konfiguration: Regale 1–19 auf 6x13-Raster --- */
     const LAYOUT_SHELVES = [
       { id: 1,  row: 0, col: 1 },
       { id: 2,  row: 0, col: 2 },
@@ -558,11 +567,11 @@
 
       { id: 9,  row: 3, col: 2 },
       { id: 8,  row: 3, col: 3 },
-      { id:10, row: 4, col: 2 },
+      { id: 10, row: 4, col: 2 },
       { id: 7,  row: 4, col: 3 },
-      { id:11, row: 5, col: 2 },
+      { id: 11, row: 5, col: 2 },
       { id: 6,  row: 5, col: 3 },
-      { id:12, row: 6, col: 2 },
+      { id: 12, row: 6, col: 2 },
       { id: 5,  row: 6, col: 3 },
 
       { id: 13, row: 7, col: 2.5 },
@@ -575,6 +584,14 @@
       { id: 18, row: 12, col: 3 }
     ];
 
+    /* --- Zeilen-Filter: Regal Säge muss gefüllt sein, sonst gilt Zeile als "nicht vorhanden" --- */
+    function isRowUsable(row) {
+      const regRaw = row["Regal Säge"];
+      const regStr = regRaw != null ? String(regRaw).trim() : "";
+      return regStr.length > 0;
+    }
+
+    /* Toolox: Button soll auch TOOLO* 33/44 fangen */
     function materialMatchesButton(mbStr, buttonName) {
       const lower = String(mbStr).toLowerCase();
       const bName = String(buttonName).toLowerCase();
@@ -618,7 +635,7 @@
         cell.style.width = cellWidth;
         cell.style.height = cellHeight;
         cell.style.left = `calc(100% * ${shelf.col} / 6)`;
-        cell.style.top = `calc(100% * ${shelf.row} / 13)`;
+        cell.style.top  = `calc(100% * ${shelf.row} / 13)`;
 
         plan.appendChild(cell);
       });
@@ -653,12 +670,6 @@
         : "Keine Excel-Daten importiert (Demo-Fallback aktiv).";
     }
 
-    function rowHasRegalSaege(row) {
-      const regRaw = row["Regal Säge"];
-      const regStr = regRaw != null ? String(regRaw).trim() : "";
-      return regStr.length > 0;
-    }
-
     function hasDurchmesser(str) {
       if (!str) return false;
       const s = String(str);
@@ -671,6 +682,7 @@
       if (!matBez) return null;
       let s = String(matBez);
 
+      // Bei Toolox-Texten erst NACH "TOOLO* 33/44" die Maße betrachten
       const markerRegex = /toolo\*\s*33|toolo\*\s*44/i;
       const markerMatch = s.match(markerRegex);
       if (markerMatch) {
@@ -691,8 +703,11 @@
       const numB = parseFloat(rawB.replace(",", "."));
       if (isNaN(numA) || isNaN(numB)) return null;
 
-      if (numA <= numB) return { height: numA, width: numB, heightLabel: rawA, widthLabel: rawB };
-      return { height: numB, width: numA, heightLabel: rawB, widthLabel: rawA };
+      if (numA <= numB) {
+        return { height: numA, width: numB, heightLabel: rawA, widthLabel: rawB };
+      } else {
+        return { height: numB, width: numA, heightLabel: rawB, widthLabel: rawA };
+      }
     }
 
     function setActiveButton(btn) {
@@ -736,8 +751,7 @@
       const dimSet = new Set();
 
       dataRows.forEach(row => {
-        // <<< NEU: Zeilen ohne Regal Säge komplett ignorieren
-        if (!rowHasRegalSaege(row)) return;
+        if (!isRowUsable(row)) return;
 
         const mb = row["Materialnummer"];
         if (!mb) return;
@@ -749,12 +763,11 @@
         if (!dims) return;
 
         currentPairs.push({ row, height: dims.height, width: dims.width });
-
         dimSet.add(dims.height);
         dimSet.add(dims.width);
 
         if (!dimLabelMap.has(dims.height)) dimLabelMap.set(dims.height, dims.heightLabel);
-        if (!dimLabelMap.has(dims.width))  dimLabelMap.set(dims.width, dims.widthLabel);
+        if (!dimLabelMap.has(dims.width))  dimLabelMap.set(dims.width,  dims.widthLabel);
       });
 
       currentDims = Array.from(dimSet).sort((a, b) => a - b);
@@ -780,12 +793,12 @@
       dims.forEach(v => {
         const opt = document.createElement("option");
         opt.value = String(v);
-        const label = dimLabelMap.get(v) ?? String(v);
-        opt.textContent = label;
+        opt.textContent = dimLabelMap.get(v) ?? String(v);
         selectEl.appendChild(opt);
       });
 
-      selectEl.value = (prev != null && dims.includes(prev)) ? String(prev) : "";
+      if (prev != null && dims.includes(prev)) selectEl.value = String(prev);
+      else selectEl.value = "";
     }
 
     function computeAllowedDims(fixedDim) {
@@ -793,7 +806,7 @@
       const set = new Set();
       currentPairs.forEach(p => {
         if (p.height === fixedDim) set.add(p.width);
-        if (p.width === fixedDim) set.add(p.height);
+        if (p.width  === fixedDim) set.add(p.height);
       });
       return Array.from(set).sort((a, b) => a - b);
     }
@@ -818,6 +831,10 @@
       }
     }
 
+    /* Regal Säge:
+       - "4" oder "12" => Palette
+       - "14.4.2" => Feld/Fach/Pos
+       - leer => Zeile wird ohnehin ignoriert (isRowUsable), aber zur Sicherheit: */
     function getLagerplatzInfo(row) {
       const kRaw = row["K"];
       const regRaw = row["Regal Säge"];
@@ -825,35 +842,27 @@
       const kStr = kRaw != null ? String(kRaw).trim().toUpperCase() : "";
       const regStr = regRaw != null ? String(regRaw).trim() : "";
 
-      // K-Sonderlogik (Keller / läuft aus)
+      // K-Sonderlogik
       if (kStr === "KX" || kStr === "XK") return { number: "K", line1: "Keller, läuft aus", line2: "" };
-      if (kStr === "K") return { number: "K", line1: "Keller", line2: "" };
-      if (kStr === "X") return { number: "", line1: "Läuft aus, kein Lagerplatz vergeben", line2: "" };
+      if (kStr === "K")                return { number: "K", line1: "Keller", line2: "" };
+      if (kStr === "X")                return { number: "",  line1: "Läuft aus, kein Lagerplatz vergeben", line2: "" };
 
-      // <<< NEU: Wenn Regal Säge nur aus Ziffern besteht => Palette
+      // Palette, wenn nur Ziffern
       if (/^\d+$/.test(regStr)) {
         return { number: regStr, line1: "Palette", line2: "" };
       }
 
-      // Normalfall: 14.4.2
-      if (regStr) {
-        const parts = regStr.split(".");
-        const feld = parts[0] || "";
-        const fach = parts[1] || "";
-        const pos  = parts[2] || "";
+      // normal: feld.fach.pos
+      const parts = regStr.split(".");
+      const feld = parts[0] || "";
+      const fach = parts[1] || "";
+      const pos  = parts[2] || "";
 
-        let number = feld;
-        let line1 = "";
-        let line2 = "";
-
-        if (fach) line1 = `Fach ${fach}`;
-        if (pos)  line2 = `Pos. ${pos}`;
-
-        return { number, line1, line2 };
-      }
-
-      // sollte wegen Row-Filter praktisch nicht vorkommen:
-      return { number: "X", line1: "kein Lagerplatz vergeben", line2: "" };
+      return {
+        number: feld ? feld : "X",
+        line1: feld ? (fach ? `Fach ${fach}` : "") : "kein Lagerplatz vergeben",
+        line2: feld ? (pos ? `Pos. ${pos}` : "") : ""
+      };
     }
 
     function showOnlyResultMode() {
@@ -869,6 +878,14 @@
         searchSection.style.display = "block";
         buildMaterialButtons();
         clearResultArea();
+
+        // >>> Reset SAP-Feld + Fokus (damit nichts "blockierend" wirkt)
+        sapError.style.display = "none";
+        sapSearchInput.value = "790000****";
+        setTimeout(() => {
+          sapSearchInput.focus();
+          sapSearchInput.setSelectionRange(6, 10);
+        }, 0);
       });
       return btn;
     }
@@ -900,7 +917,7 @@
 
         const numBig = document.createElement("div");
         numBig.className = "result-number-big";
-        numBig.textContent = (number != null) ? String(number) : "-";
+        numBig.textContent = number != null ? String(number) : "-";
         card.appendChild(numBig);
 
         const fachDiv = document.createElement("div");
@@ -918,9 +935,11 @@
         const lineDiv = document.createElement("div");
         lineDiv.className = "result-line";
 
-        const matName = selectedButton || "";
+        const matName = selectedButton || "SAP";
         const dimsTxt = dimsDisplayShort || "";
-        lineDiv.textContent = (matName && dimsTxt) ? `${matName} | ${dimsTxt}` : (matName || dimsTxt);
+
+        lineDiv.textContent =
+          (matName && dimsTxt) ? `${matName} | ${dimsTxt}` : (matName || dimsTxt);
 
         const shelf = document.createElement("div");
         shelf.className = "result-shelf";
@@ -981,8 +1000,7 @@
 
       const lineDiv = document.createElement("div");
       lineDiv.className = "result-line";
-
-      const matName = selectedButton || "";
+      const matName = selectedButton || "SAP";
       const dimsTxt = dimsDisplayShort || "";
       lineDiv.textContent = (matName && dimsTxt) ? `${matName} | ${dimsTxt}` : (matName || dimsTxt || "");
 
@@ -992,7 +1010,6 @@
       const shelfInner = document.createElement("div");
       shelfInner.className = "result-shelf-inner";
       shelfInner.textContent = "----";
-
       shelf.appendChild(shelfInner);
 
       const infoDiv = document.createElement("div");
@@ -1032,7 +1049,10 @@
 
       const matches = [];
       for (const p of currentPairs) {
-        if ((p.height === v1 && p.width === v2) || (p.height === v2 && p.width === v1)) {
+        if (
+          (p.height === v1 && p.width === v2) ||
+          (p.height === v2 && p.width === v1)
+        ) {
           matches.push(p.row);
         }
       }
@@ -1046,51 +1066,55 @@
       fillSelect(select2, "Maß 2", currentDims, null);
     }
 
-    function normalizeSapInput(raw) {
-      if (!raw) return "";
-      const digits = String(raw).replace(/[^\d]/g, "");
-      if (/^\d{4}$/.test(digits)) return "790000" + digits;
-      if (/^\d{10}$/.test(digits)) return digits;
-      return "";
+    /* --- SAP Suche --- */
+    function digitsOnly(str) {
+      return (str || "").replace(/\D/g, "");
     }
 
-    function searchBySap() {
-      const norm = normalizeSapInput(sapSearchInput.value);
+    function runSapSearch() {
+      sapError.style.display = "none";
 
-      if (!norm) {
-        showNoResult("", "10-stellig!");
+      const raw = sapSearchInput.value || "";
+      const digits = digitsOnly(raw);
+
+      // erlaubt: 4 oder 10 Ziffern
+      if (!(digits.length === 4 || digits.length === 10)) {
+        sapError.style.display = "block";
         return;
       }
 
-      const matches = dataRows.filter(r => {
-        // <<< NEU: Zeilen ohne Regal Säge komplett ignorieren
-        if (!rowHasRegalSaege(r)) return false;
+      let target = digits;
+      if (digits.length === 4) {
+        target = "790000" + digits;
+      }
 
-        const mat = r["Material"] != null ? String(r["Material"]).trim() : "";
-        return mat === norm;
-      });
+      // Ergebnis wie normale Suche anzeigen
+      selectedButton = null;
+
+      const matches = dataRows
+        .filter(isRowUsable)
+        .filter(r => String(r["Material"] || "").trim() === target);
 
       if (matches.length > 0) {
-        selectedButton = "";
-        showResults(matches, "");
+        showResults(matches, target);
       } else {
-        showNoResult("", `Material ${norm} nicht gefunden.`);
+        showNoResult(target, "Material nicht vorhanden.");
       }
     }
 
-    function focusSapStars() {
-      const v = sapSearchInput.value || "";
-      if (v === "790000****") {
-        sapSearchInput.setSelectionRange(6, 10);
+    // UX: beim ersten Fokus Sternchen markieren, danach nicht mehr "reinpfuschen"
+    let sapFirstFocus = true;
+    sapSearchInput.addEventListener("focus", () => {
+      if (sapFirstFocus && sapSearchInput.value === "790000****") {
+        setTimeout(() => sapSearchInput.setSelectionRange(6, 10), 0);
       }
-    }
-
-    sapSearchInput.addEventListener("focus", () => setTimeout(focusSapStars, 0));
-    sapSearchInput.addEventListener("click", focusSapStars);
-    sapSearchInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") searchBySap();
+      sapFirstFocus = false;
     });
-    sapSearchBtn.addEventListener("click", searchBySap);
+
+    sapSearchBtn.addEventListener("click", runSapSearch);
+    sapSearchInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") runSapSearch();
+    });
 
     document.getElementById("excelBtn").addEventListener("click", () => {
       document.getElementById("excelInput").click();
