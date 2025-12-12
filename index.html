@@ -9,8 +9,8 @@
   <link rel="icon" href="materialfinder_icon.png" type="image/png" />
   <link rel="apple-touch-icon" href="materialfinder_icon.png" />
 
-  <!-- Excel-Library von CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- Excel-Library LOKAL (offline) -->
+  <script src="./xlsx.full.min.js"></script>
 
   <style>
     * { box-sizing: border-box; }
@@ -518,14 +518,7 @@
     const STORAGE_KEY = "materialFinderDataV2";
 
     const MATERIAL_BUTTONS = [
-      "W300",
-      "K110",
-      "K945",
-      "K490",
-      "Tenasteel",
-      "Toolox",
-      "S790",
-      "M200"
+      "W300","K110","K945","K490","Tenasteel","Toolox","S790","M200"
     ];
 
     let dataRows = [];
@@ -554,11 +547,10 @@
       { Material: "7900001001", Materialnummer: "K110 10x40x1000mm", "Regal Säge": "5.1.1", K: "" },
       { Material: "7900001002", Materialnummer: "K110 20x50x1000mm", "Regal Säge": "6.2.1", K: "" },
       { Material: "7900001003", Materialnummer: "K490 20*20*1000mm", "Regal Säge": "7.3.2", K: "" },
-      { Material: "7900002002", Materialnummer: "W300 15,4*20,4*500mm", "Regal Säge": "4", K: "" },         /* Palette via Regal Säge */
+      { Material: "7900002002", Materialnummer: "W300 15,4*20,4*500mm", "Regal Säge": "4", K: "" },
       { Material: "7900003001", Materialnummer: "TOOLO* 44 12*50*1000mm", "Regal Säge": "3.1.1", K: "" }
     ];
 
-    /* --- Lageplan-Konfiguration: Regale 1–19 auf 6x13-Raster --- */
     const LAYOUT_SHELVES = [
       { id: 1,  row: 0, col: 1 },
       { id: 2,  row: 0, col: 2 },
@@ -584,14 +576,12 @@
       { id: 18, row: 12, col: 3 }
     ];
 
-    /* --- Zeilen-Filter: Regal Säge muss gefüllt sein, sonst gilt Zeile als "nicht vorhanden" --- */
     function isRowUsable(row) {
       const regRaw = row["Regal Säge"];
       const regStr = regRaw != null ? String(regRaw).trim() : "";
       return regStr.length > 0;
     }
 
-    /* Toolox: Button soll auch TOOLO* 33/44 fangen */
     function materialMatchesButton(mbStr, buttonName) {
       const lower = String(mbStr).toLowerCase();
       const bName = String(buttonName).toLowerCase();
@@ -682,7 +672,6 @@
       if (!matBez) return null;
       let s = String(matBez);
 
-      // Bei Toolox-Texten erst NACH "TOOLO* 33/44" die Maße betrachten
       const markerRegex = /toolo\*\s*33|toolo\*\s*44/i;
       const markerMatch = s.match(markerRegex);
       if (markerMatch) {
@@ -703,11 +692,8 @@
       const numB = parseFloat(rawB.replace(",", "."));
       if (isNaN(numA) || isNaN(numB)) return null;
 
-      if (numA <= numB) {
-        return { height: numA, width: numB, heightLabel: rawA, widthLabel: rawB };
-      } else {
-        return { height: numB, width: numA, heightLabel: rawB, widthLabel: rawA };
-      }
+      if (numA <= numB) return { height: numA, width: numB, heightLabel: rawA, widthLabel: rawB };
+      return { height: numB, width: numA, heightLabel: rawB, widthLabel: rawA };
     }
 
     function setActiveButton(btn) {
@@ -734,7 +720,6 @@
       MATERIAL_BUTTONS.forEach(name => {
         const btn = document.createElement("button");
         btn.className = "mat-btn";
-        btn.dataset.materialName = name;
         btn.textContent = name;
         btn.addEventListener("click", () => onMaterialButtonClick(name, btn));
         materialsContainer.appendChild(btn);
@@ -742,6 +727,9 @@
     }
 
     function onMaterialButtonClick(name, btnElement) {
+      // Wenn jemand nach SAP gesucht hat und dann Buttons nutzt: SAP-Error weg + Feld neutral
+      sapError.style.display = "none";
+
       selectedButton = name;
       setActiveButton(btnElement);
 
@@ -771,8 +759,6 @@
       });
 
       currentDims = Array.from(dimSet).sort((a, b) => a - b);
-      selectedDim1 = null;
-      selectedDim2 = null;
 
       fillSelect(select1, "Maß 1", currentDims, null);
       fillSelect(select2, "Maß 2", currentDims, null);
@@ -782,7 +768,6 @@
     }
 
     function fillSelect(selectEl, placeholderLabel, dims, keepValue) {
-      const prev = keepValue;
       selectEl.innerHTML = "";
 
       const ph = document.createElement("option");
@@ -797,8 +782,7 @@
         selectEl.appendChild(opt);
       });
 
-      if (prev != null && dims.includes(prev)) selectEl.value = String(prev);
-      else selectEl.value = "";
+      selectEl.value = "";
     }
 
     function computeAllowedDims(fixedDim) {
@@ -820,21 +804,13 @@
 
       if (fromSelect === 1) {
         const allowedFor2 = computeAllowedDims(selectedDim1);
-        const keep = allowedFor2.includes(selectedDim2) ? selectedDim2 : null;
-        if (!keep) selectedDim2 = null;
-        fillSelect(select2, "Maß 2", allowedFor2, keep);
+        fillSelect(select2, "Maß 2", allowedFor2, null);
       } else if (fromSelect === 2) {
         const allowedFor1 = computeAllowedDims(selectedDim2);
-        const keep = allowedFor1.includes(selectedDim1) ? selectedDim1 : null;
-        if (!keep) selectedDim1 = null;
-        fillSelect(select1, "Maß 1", allowedFor1, keep);
+        fillSelect(select1, "Maß 1", allowedFor1, null);
       }
     }
 
-    /* Regal Säge:
-       - "4" oder "12" => Palette
-       - "14.4.2" => Feld/Fach/Pos
-       - leer => Zeile wird ohnehin ignoriert (isRowUsable), aber zur Sicherheit: */
     function getLagerplatzInfo(row) {
       const kRaw = row["K"];
       const regRaw = row["Regal Säge"];
@@ -842,17 +818,12 @@
       const kStr = kRaw != null ? String(kRaw).trim().toUpperCase() : "";
       const regStr = regRaw != null ? String(regRaw).trim() : "";
 
-      // K-Sonderlogik
       if (kStr === "KX" || kStr === "XK") return { number: "K", line1: "Keller, läuft aus", line2: "" };
-      if (kStr === "K")                return { number: "K", line1: "Keller", line2: "" };
-      if (kStr === "X")                return { number: "",  line1: "Läuft aus, kein Lagerplatz vergeben", line2: "" };
+      if (kStr === "K") return { number: "K", line1: "Keller", line2: "" };
+      if (kStr === "X") return { number: "", line1: "Läuft aus, kein Lagerplatz vergeben", line2: "" };
 
-      // Palette, wenn nur Ziffern
-      if (/^\d+$/.test(regStr)) {
-        return { number: regStr, line1: "Palette", line2: "" };
-      }
+      if (/^\d+$/.test(regStr)) return { number: regStr, line1: "Palette", line2: "" };
 
-      // normal: feld.fach.pos
       const parts = regStr.split(".");
       const feld = parts[0] || "";
       const fach = parts[1] || "";
@@ -879,7 +850,6 @@
         buildMaterialButtons();
         clearResultArea();
 
-        // >>> Reset SAP-Feld + Fokus (damit nichts "blockierend" wirkt)
         sapError.style.display = "none";
         sapSearchInput.value = "790000****";
         setTimeout(() => {
@@ -934,12 +904,9 @@
 
         const lineDiv = document.createElement("div");
         lineDiv.className = "result-line";
-
         const matName = selectedButton || "SAP";
         const dimsTxt = dimsDisplayShort || "";
-
-        lineDiv.textContent =
-          (matName && dimsTxt) ? `${matName} | ${dimsTxt}` : (matName || dimsTxt);
+        lineDiv.textContent = (matName && dimsTxt) ? `${matName} | ${dimsTxt}` : (matName || dimsTxt);
 
         const shelf = document.createElement("div");
         shelf.className = "result-shelf";
@@ -1049,24 +1016,15 @@
 
       const matches = [];
       for (const p of currentPairs) {
-        if (
-          (p.height === v1 && p.width === v2) ||
-          (p.height === v2 && p.width === v1)
-        ) {
+        if ((p.height === v1 && p.width === v2) || (p.height === v2 && p.width === v1)) {
           matches.push(p.row);
         }
       }
 
       if (matches.length > 0) showResults(matches, dimsDisplayShort);
       else showNoResult(dimsDisplayShort, "Material in diesen Abmessungen nicht vorhanden.");
-
-      selectedDim1 = null;
-      selectedDim2 = null;
-      fillSelect(select1, "Maß 1", currentDims, null);
-      fillSelect(select2, "Maß 2", currentDims, null);
     }
 
-    /* --- SAP Suche --- */
     function digitsOnly(str) {
       return (str || "").replace(/\D/g, "");
     }
@@ -1077,32 +1035,24 @@
       const raw = sapSearchInput.value || "";
       const digits = digitsOnly(raw);
 
-      // erlaubt: 4 oder 10 Ziffern
       if (!(digits.length === 4 || digits.length === 10)) {
         sapError.style.display = "block";
         return;
       }
 
       let target = digits;
-      if (digits.length === 4) {
-        target = "790000" + digits;
-      }
+      if (digits.length === 4) target = "790000" + digits;
 
-      // Ergebnis wie normale Suche anzeigen
       selectedButton = null;
 
       const matches = dataRows
         .filter(isRowUsable)
         .filter(r => String(r["Material"] || "").trim() === target);
 
-      if (matches.length > 0) {
-        showResults(matches, target);
-      } else {
-        showNoResult(target, "Material nicht vorhanden.");
-      }
+      if (matches.length > 0) showResults(matches, target);
+      else showNoResult(target, "Material nicht vorhanden.");
     }
 
-    // UX: beim ersten Fokus Sternchen markieren, danach nicht mehr "reinpfuschen"
     let sapFirstFocus = true;
     sapSearchInput.addEventListener("focus", () => {
       if (sapFirstFocus && sapSearchInput.value === "790000****") {
@@ -1136,7 +1086,6 @@
           usingExcel = true;
           updateStatusText();
           buildMaterialButtons();
-
           localStorage.setItem(STORAGE_KEY, JSON.stringify(dataRows));
         } catch (err) {
           console.error(err);
