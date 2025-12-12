@@ -67,57 +67,52 @@
       flex: 1;
     }
 
-    /* --- NEU: SAP-Suche --- */
+    /* --- SAP Suche --- */
     .sap-search {
-      margin: 12px 0 6px;
-      padding-top: 8px;
-      border-top: 1px solid #d8dee8; /* optisch abgesetzt */
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 12px 0 4px;
+    }
+
+    .sap-icon {
+      width: 28px;
+      height: 28px;
+      flex: 0 0 28px;
+      display: block;
+    }
+
+    .sap-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 0;
     }
 
     .sap-label {
       font-size: 0.9rem;
       color: #333;
-      margin: 0 0 6px;
-      font-weight: 700;
+      font-weight: 600;
     }
 
     .sap-row {
       display: flex;
+      gap: 8px;
       align-items: center;
-      gap: 10px;
-    }
-
-    .sap-icon {
-      width: 34px;
-      height: 34px;
-      border-radius: 10px;
-      background: #ffffff;
-      border: 1px solid #cdd4e0;
-      display: grid;
-      place-items: center;
-      flex: 0 0 34px;
-      overflow: hidden;
-    }
-
-    .sap-icon img {
-      width: 24px;
-      height: 24px;
-      object-fit: contain;
-      display: block;
     }
 
     .sap-input {
       flex: 1;
-      width: 100%;
       padding: 10px 12px;
       font-size: 1.05rem;
       border-radius: 12px;
       border: 1px solid #cdd4e0;
       background: #ffffff;
-      outline: none;
+      min-width: 0;
     }
 
-    .sap-go {
+    .sap-btn {
       padding: 10px 14px;
       border-radius: 12px;
       border: none;
@@ -147,7 +142,10 @@
 
     .mat-btn.active { background: #0050a0; }
 
-    .dimension-area { margin-top: 8px; display: none; }
+    .dimension-area {
+      margin-top: 8px;
+      display: none;
+    }
 
     .dim-row-selects {
       display: grid;
@@ -295,6 +293,7 @@
       margin-top: 8px;
     }
 
+    /* --- LAGEPLAN --- */
     .layout-plan-wrapper {
       margin-top: 4px;
       flex: 0 0 220px;
@@ -420,7 +419,7 @@
   <!-- Sicherheitscode-Schutz -->
   <script>
     (function () {
-      const CODE = "SägeBO";
+      const CODE = "SägeBO"; // Sicherheitscode anpassbar
       const ACCESS_KEY = "materialFinderAccessOk";
 
       try {
@@ -469,22 +468,22 @@
 
       <input type="file" id="excelInput" accept=".xlsx,.xls" style="display:none" />
 
-      <!-- NEU: SAP-Suche -->
+      <!-- SAP Suche -->
       <div class="sap-search">
-        <div class="sap-label">Nach SAP-Nummer suchen</div>
-        <div class="sap-row">
-          <div class="sap-icon" aria-hidden="true">
-            <img src="materialfinder_icon.png" alt="">
+        <img class="sap-icon" src="materialfinder_icon.png" alt="icon" />
+        <div class="sap-col">
+          <div class="sap-label">Nach SAP-Nummer suchen.</div>
+          <div class="sap-row">
+            <input
+              id="sapSearchInput"
+              class="sap-input"
+              type="text"
+              inputmode="numeric"
+              value="790000****"
+              autocomplete="off"
+            />
+            <button id="sapSearchBtn" class="sap-btn">Suchen</button>
           </div>
-          <input
-            id="sapSearchInput"
-            class="sap-input"
-            type="text"
-            inputmode="numeric"
-            placeholder="790000****"
-            autocomplete="off"
-          />
-          <button class="sap-go" id="sapSearchBtn">Suchen</button>
         </div>
       </div>
 
@@ -521,7 +520,7 @@
       "Tenasteel",
       "Toolox",
       "S790",
-      "M200" // <- NEU
+      "M200" // neu
     ];
 
     let dataRows = [];
@@ -546,14 +545,44 @@
     const sapSearchBtn = document.getElementById("sapSearchBtn");
 
     const demoData = [
-      { Material:"7900001001", Materialnummer:"K110 10x40x1000mm", "Regal Säge":"5.1.1", Palette:"", K:"" },
-      { Material:"7900001002", Materialnummer:"K110 20x50x1000mm", "Regal Säge":"6.2.1", Palette:"", K:"" },
-      { Material:"7900001003", Materialnummer:"K490 20*20*1000mm", "Regal Säge":"7.3.2", Palette:"", K:"" },
-      { Material:"7900002001", Materialnummer:"W300 8*20*1000mm",  "Regal Säge":"",     Palette:"", K:"" },
-      { Material:"7900002002", Materialnummer:"W300 15,4*20,4*500mm","Regal Säge":"",    Palette:"4", K:"" },
-      { Material:"7900003001", Materialnummer:"TOOLO* 44 12*50*1000mm","Regal Säge":"3.1.1",Palette:"",K:"" }
+      {
+        Material: "7900001001",
+        Materialnummer: "K110 10x40x1000mm",
+        "Regal Säge": "5.1.1",
+        Palette: "",
+        K: ""
+      },
+      {
+        Material: "7900001002",
+        Materialnummer: "K110 20x50x1000mm",
+        "Regal Säge": "6.2.1",
+        Palette: "",
+        K: ""
+      },
+      {
+        Material: "7900001003",
+        Materialnummer: "K490 20*20*1000mm",
+        "Regal Säge": "7.3.2",
+        Palette: "",
+        K: ""
+      },
+      {
+        Material: "7900002002",
+        Materialnummer: "W300 15,4*20,4*500mm",
+        "Regal Säge": "",
+        Palette: "4",
+        K: ""
+      },
+      {
+        Material: "7900003001",
+        Materialnummer: "TOOLO* 44 12*50*1000mm",
+        "Regal Säge": "3.1.1",
+        Palette: "",
+        K: ""
+      }
     ];
 
+    /* --- Lageplan-Konfiguration: Regale 1–19 auf 6x13-Raster --- */
     const LAYOUT_SHELVES = [
       { id: 1,  row: 0, col: 1 },
       { id: 2,  row: 0, col: 2 },
@@ -579,6 +608,7 @@
       { id: 18, row: 12, col: 3 }
     ];
 
+    /* Toolox soll auch TOOLO* 33/44 finden */
     function materialMatchesButton(mbStr, buttonName) {
       const lower = String(mbStr).toLowerCase();
       const bName = String(buttonName).toLowerCase();
@@ -586,8 +616,10 @@
       if (bName === "toolox") {
         return (
           lower.includes("toolox") ||
-          lower.includes("toolo* 33") || lower.includes("toolo*33") ||
-          lower.includes("toolo* 44") || lower.includes("toolo*44")
+          lower.includes("toolo* 33") ||
+          lower.includes("toolo*33") ||
+          lower.includes("toolo* 44") ||
+          lower.includes("toolo*44")
         );
       }
       return lower.includes(bName);
@@ -620,7 +652,7 @@
         cell.style.width = cellWidth;
         cell.style.height = cellHeight;
         cell.style.left = `calc(100% * ${shelf.col} / 6)`;
-        cell.style.top  = `calc(100% * ${shelf.row} / 13)`;
+        cell.style.top = `calc(100% * ${shelf.row} / 13)`;
 
         plan.appendChild(cell);
       });
@@ -667,6 +699,7 @@
       if (!matBez) return null;
       let s = String(matBez);
 
+      // Bei Toolox-Texten erst NACH "TOOLO* 33/44" die Maße betrachten
       const markerRegex = /toolo\*\s*33|toolo\*\s*44/i;
       const markerMatch = s.match(markerRegex);
       if (markerMatch) {
@@ -688,9 +721,9 @@
       if (isNaN(numA) || isNaN(numB)) return null;
 
       if (numA <= numB) {
-        return { height:numA, width:numB, heightLabel:rawA, widthLabel:rawB };
+        return { height: numA, width: numB, heightLabel: rawA, widthLabel: rawB };
       } else {
-        return { height:numB, width:numA, heightLabel:rawB, widthLabel:rawA };
+        return { height: numB, width: numA, heightLabel: rawB, widthLabel: rawA };
       }
     }
 
@@ -739,18 +772,19 @@
         if (!mb) return;
 
         const mbStr = String(mb);
+
         if (!materialMatchesButton(mbStr, name)) return;
 
         const dims = extractFirstDimPair(mbStr);
         if (!dims) return;
 
-        currentPairs.push({ row, height:dims.height, width:dims.width });
+        currentPairs.push({ row, height: dims.height, width: dims.width });
 
         dimSet.add(dims.height);
         dimSet.add(dims.width);
 
         if (!dimLabelMap.has(dims.height)) dimLabelMap.set(dims.height, dims.heightLabel);
-        if (!dimLabelMap.has(dims.width))  dimLabelMap.set(dims.width,  dims.widthLabel);
+        if (!dimLabelMap.has(dims.width))  dimLabelMap.set(dims.width, dims.widthLabel);
       });
 
       currentDims = Array.from(dimSet).sort((a, b) => a - b);
@@ -776,7 +810,8 @@
       dims.forEach(v => {
         const opt = document.createElement("option");
         opt.value = String(v);
-        opt.textContent = dimLabelMap.get(v) ?? String(v);
+        const label = dimLabelMap.get(v) ?? String(v);
+        opt.textContent = label;
         selectEl.appendChild(opt);
       });
 
@@ -788,9 +823,9 @@
       const set = new Set();
       currentPairs.forEach(p => {
         if (p.height === fixedDim) set.add(p.width);
-        if (p.width  === fixedDim) set.add(p.height);
+        if (p.width === fixedDim) set.add(p.height);
       });
-      return Array.from(set).sort((a,b)=>a-b);
+      return Array.from(set).sort((a, b) => a - b);
     }
 
     function onSelectChange(fromSelect) {
@@ -814,38 +849,44 @@
     }
 
     function getLagerplatzInfo(row) {
-      const kRaw   = row["K"];
+      const kRaw = row["K"];
       const regRaw = row["Regal Säge"];
       const palRaw = row["Palette"];
 
-      const kStr   = kRaw   != null ? String(kRaw).trim().toUpperCase() : "";
+      const kStr = kRaw != null ? String(kRaw).trim().toUpperCase() : "";
       const regStr = regRaw != null ? String(regRaw).trim() : "";
       const palStr = palRaw != null ? String(palRaw).trim() : "";
 
-      if (kStr === "KX" || kStr === "XK") return { number:"K", line1:"Keller, läuft aus", line2:"" };
-      if (kStr === "K")                 return { number:"K", line1:"Keller", line2:"" };
-      if (kStr === "X")                 return { number:"",  line1:"Läuft aus, kein Lagerplatz vergeben", line2:"" };
+      // K-Sonderlogik (Keller / läuft aus)
+      if (kStr === "KX" || kStr === "XK") return { number: "K", line1: "Keller, läuft aus", line2: "" };
+      if (kStr === "K") return { number: "K", line1: "Keller", line2: "" };
+      if (kStr === "X") return { number: "", line1: "Läuft aus, kein Lagerplatz vergeben", line2: "" };
+
+      let number = null;
+      let line1 = "";
+      let line2 = "";
 
       if (palStr) {
         const n = parseInt(palStr, 10);
-        return { number:(!isNaN(n)?n:""), line1:"Palette", line2:"" };
-      }
-
-      if (regStr) {
+        if (!isNaN(n)) number = n;
+        line1 = "Palette";
+      } else if (regStr) {
         const parts = regStr.split(".");
         const feld = parts[0] || "";
         const fach = parts[1] || "";
         const pos  = parts[2] || "";
-        const n = parseInt(feld, 10);
 
-        return {
-          number: (!isNaN(n) ? n : ""),
-          line1: fach ? `Fach ${fach}` : "",
-          line2: pos  ? `Pos. ${pos}` : ""
-        };
+        const n = parseInt(feld, 10);
+        if (!isNaN(n)) number = n;
+
+        if (fach) line1 = `Fach ${fach}`;
+        if (pos)  line2 = `Pos. ${pos}`;
+      } else {
+        number = "X";
+        line1  = "kein Lagerplatz vergeben";
       }
 
-      return { number:"X", line1:"kein Lagerplatz vergeben", line2:"" };
+      return { number, line1, line2 };
     }
 
     function showOnlyResultMode() {
@@ -877,7 +918,7 @@
       const highlightNumbers = [];
 
       rows.forEach(row => {
-        const matFull  = row["Material"] != null ? String(row["Material"]).trim() : "";
+        const matFull = row["Material"] != null ? String(row["Material"]).trim() : "";
         const matShort = matFull ? matFull.slice(-4) : "----";
 
         const { number, line1, line2 } = getLagerplatzInfo(row);
@@ -921,6 +962,7 @@
         const shelfInner = document.createElement("div");
         shelfInner.className = "result-shelf-inner";
         shelfInner.textContent = matShort || "----";
+
         shelf.appendChild(shelfInner);
 
         const infoDiv = document.createElement("div");
@@ -936,6 +978,7 @@
       });
 
       resultsColumn.appendChild(createNewSearchButton());
+
       wrapper.appendChild(resultsColumn);
 
       const planWrapper = createLayoutPlan(highlightNumbers);
@@ -973,15 +1016,19 @@
 
       const lineDiv = document.createElement("div");
       lineDiv.className = "result-line";
+
       const matName = selectedButton || "";
       const dimsTxt = dimsDisplayShort || "";
+
       lineDiv.textContent = (matName && dimsTxt) ? `${matName} | ${dimsTxt}` : (matName || dimsTxt || "");
 
       const shelf = document.createElement("div");
       shelf.className = "result-shelf";
+
       const shelfInner = document.createElement("div");
       shelfInner.className = "result-shelf-inner";
       shelfInner.textContent = "----";
+
       shelf.appendChild(shelfInner);
 
       const infoDiv = document.createElement("div");
@@ -995,6 +1042,7 @@
 
       resultsColumn.appendChild(main);
       resultsColumn.appendChild(createNewSearchButton());
+
       wrapper.appendChild(resultsColumn);
 
       const planWrapper = createLayoutPlan(null);
@@ -1021,7 +1069,10 @@
 
       const matches = [];
       for (const p of currentPairs) {
-        if ((p.height === v1 && p.width === v2) || (p.height === v2 && p.width === v1)) {
+        if (
+          (p.height === v1 && p.width === v2) ||
+          (p.height === v2 && p.width === v1)
+        ) {
           matches.push(p.row);
         }
       }
@@ -1035,28 +1086,20 @@
       fillSelect(select2, "Maß 2", currentDims, null);
     }
 
-    /* --- NEU: SAP-Suche Logik --- */
+    /* --- SAP Suche (4-stellig oder 10-stellig) --- */
     function normalizeSapInput(raw) {
       if (!raw) return "";
-      const s = String(raw).trim();
-
-      // nur Ziffern + * zulassen (damit "790000****" nicht kaputt ist)
-      const cleaned = s.replace(/[^\d*]/g, "");
-
-      // Wenn nur 4 Ziffern: vorne 790000 ergänzen
-      if (/^\d{4}$/.test(cleaned)) return "790000" + cleaned;
-
-      // Wenn 10 Ziffern: passt
-      if (/^\d{10}$/.test(cleaned)) return cleaned;
-
-      return ""; // ungültig
+      const digits = String(raw).replace(/[^\d]/g, ""); // nur Ziffern
+      if (/^\d{4}$/.test(digits)) return "790000" + digits;
+      if (/^\d{10}$/.test(digits)) return digits;
+      return "";
     }
 
     function searchBySap() {
       const norm = normalizeSapInput(sapSearchInput.value);
 
       if (!norm) {
-        showNoResult("", "Bitte 4 oder 10 Ziffern eingeben (z.B. 1234 oder 7900001234).");
+        showNoResult("", "10-stellig!");
         return;
       }
 
@@ -1066,14 +1109,27 @@
       });
 
       if (matches.length > 0) {
-        // Button/Zeile oberhalb: bei SAP-Suche zeigen wir in der Zeile keine Materialbezeichnung/ Maße an
-        // (du wolltest: gleiche Ergebnisausgabe wie sonst → die Karten sind gleich; nur die lineDiv bleibt leer)
-        selectedButton = ""; // damit "matName | dims" nicht irritiert
+        selectedButton = "";
         showResults(matches, "");
       } else {
         showNoResult("", `Material ${norm} nicht gefunden.`);
       }
     }
+
+    /* Sternchen komfortabel ersetzen */
+    function focusSapStars() {
+      const v = sapSearchInput.value || "";
+      if (v === "790000****") {
+        sapSearchInput.setSelectionRange(6, 10); // **** markieren
+      }
+    }
+
+    sapSearchInput.addEventListener("focus", () => setTimeout(focusSapStars, 0));
+    sapSearchInput.addEventListener("click", focusSapStars);
+    sapSearchInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") searchBySap();
+    });
+    sapSearchBtn.addEventListener("click", searchBySap);
 
     document.getElementById("excelBtn").addEventListener("click", () => {
       document.getElementById("excelInput").click();
@@ -1111,15 +1167,6 @@
     select1.addEventListener("change", () => onSelectChange(1));
     select2.addEventListener("change", () => onSelectChange(2));
     document.getElementById("searchBtn").addEventListener("click", onSearch);
-
-    // SAP: Button + Enter
-    sapSearchBtn.addEventListener("click", searchBySap);
-    sapSearchInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        searchBySap();
-      }
-    });
 
     (function init() {
       try {
