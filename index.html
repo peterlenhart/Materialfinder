@@ -419,7 +419,7 @@
   <!-- Sicherheitscode-Schutz -->
   <script>
     (function () {
-      const CODE = "SägeBO"; // Sicherheitscode anpassbar
+      const CODE = "SägeBO";
       const ACCESS_KEY = "materialFinderAccessOk";
 
       try {
@@ -430,7 +430,6 @@
         }
 
         const eingabe = prompt("Bitte Sicherheitscode für den Material Finder eingeben:");
-
         if (eingabe === CODE) {
           localStorage.setItem(ACCESS_KEY, "true");
           window.materialFinderAccessGranted = true;
@@ -520,7 +519,7 @@
       "Tenasteel",
       "Toolox",
       "S790",
-      "M200" // neu
+      "M200"
     ];
 
     let dataRows = [];
@@ -545,44 +544,12 @@
     const sapSearchBtn = document.getElementById("sapSearchBtn");
 
     const demoData = [
-      {
-        Material: "7900001001",
-        Materialnummer: "K110 10x40x1000mm",
-        "Regal Säge": "5.1.1",
-        Palette: "",
-        K: ""
-      },
-      {
-        Material: "7900001002",
-        Materialnummer: "K110 20x50x1000mm",
-        "Regal Säge": "6.2.1",
-        Palette: "",
-        K: ""
-      },
-      {
-        Material: "7900001003",
-        Materialnummer: "K490 20*20*1000mm",
-        "Regal Säge": "7.3.2",
-        Palette: "",
-        K: ""
-      },
-      {
-        Material: "7900002002",
-        Materialnummer: "W300 15,4*20,4*500mm",
-        "Regal Säge": "",
-        Palette: "4",
-        K: ""
-      },
-      {
-        Material: "7900003001",
-        Materialnummer: "TOOLO* 44 12*50*1000mm",
-        "Regal Säge": "3.1.1",
-        Palette: "",
-        K: ""
-      }
+      { Material: "7900001001", Materialnummer: "K110 10x40x1000mm", "Regal Säge": "5.1.1", K: "" },
+      { Material: "7900002002", Materialnummer: "W300 15,4*20,4*500mm", "Regal Säge": "4", K: "" },
+      { Material: "7900003001", Materialnummer: "TOOLO* 44 12*50*1000mm", "Regal Säge": "3.1.1", K: "" },
+      { Material: "7900009999", Materialnummer: "W300 8*20*1000mm", "Regal Säge": "", K: "" } // wird ignoriert
     ];
 
-    /* --- Lageplan-Konfiguration: Regale 1–19 auf 6x13-Raster --- */
     const LAYOUT_SHELVES = [
       { id: 1,  row: 0, col: 1 },
       { id: 2,  row: 0, col: 2 },
@@ -608,7 +575,6 @@
       { id: 18, row: 12, col: 3 }
     ];
 
-    /* Toolox soll auch TOOLO* 33/44 finden */
     function materialMatchesButton(mbStr, buttonName) {
       const lower = String(mbStr).toLowerCase();
       const bName = String(buttonName).toLowerCase();
@@ -687,6 +653,12 @@
         : "Keine Excel-Daten importiert (Demo-Fallback aktiv).";
     }
 
+    function rowHasRegalSaege(row) {
+      const regRaw = row["Regal Säge"];
+      const regStr = regRaw != null ? String(regRaw).trim() : "";
+      return regStr.length > 0;
+    }
+
     function hasDurchmesser(str) {
       if (!str) return false;
       const s = String(str);
@@ -699,7 +671,6 @@
       if (!matBez) return null;
       let s = String(matBez);
 
-      // Bei Toolox-Texten erst NACH "TOOLO* 33/44" die Maße betrachten
       const markerRegex = /toolo\*\s*33|toolo\*\s*44/i;
       const markerMatch = s.match(markerRegex);
       if (markerMatch) {
@@ -720,11 +691,8 @@
       const numB = parseFloat(rawB.replace(",", "."));
       if (isNaN(numA) || isNaN(numB)) return null;
 
-      if (numA <= numB) {
-        return { height: numA, width: numB, heightLabel: rawA, widthLabel: rawB };
-      } else {
-        return { height: numB, width: numA, heightLabel: rawB, widthLabel: rawA };
-      }
+      if (numA <= numB) return { height: numA, width: numB, heightLabel: rawA, widthLabel: rawB };
+      return { height: numB, width: numA, heightLabel: rawB, widthLabel: rawA };
     }
 
     function setActiveButton(btn) {
@@ -768,11 +736,13 @@
       const dimSet = new Set();
 
       dataRows.forEach(row => {
+        // <<< NEU: Zeilen ohne Regal Säge komplett ignorieren
+        if (!rowHasRegalSaege(row)) return;
+
         const mb = row["Materialnummer"];
         if (!mb) return;
 
         const mbStr = String(mb);
-
         if (!materialMatchesButton(mbStr, name)) return;
 
         const dims = extractFirstDimPair(mbStr);
@@ -851,42 +821,39 @@
     function getLagerplatzInfo(row) {
       const kRaw = row["K"];
       const regRaw = row["Regal Säge"];
-      const palRaw = row["Palette"];
 
       const kStr = kRaw != null ? String(kRaw).trim().toUpperCase() : "";
       const regStr = regRaw != null ? String(regRaw).trim() : "";
-      const palStr = palRaw != null ? String(palRaw).trim() : "";
 
       // K-Sonderlogik (Keller / läuft aus)
       if (kStr === "KX" || kStr === "XK") return { number: "K", line1: "Keller, läuft aus", line2: "" };
       if (kStr === "K") return { number: "K", line1: "Keller", line2: "" };
       if (kStr === "X") return { number: "", line1: "Läuft aus, kein Lagerplatz vergeben", line2: "" };
 
-      let number = null;
-      let line1 = "";
-      let line2 = "";
+      // <<< NEU: Wenn Regal Säge nur aus Ziffern besteht => Palette
+      if (/^\d+$/.test(regStr)) {
+        return { number: regStr, line1: "Palette", line2: "" };
+      }
 
-      if (palStr) {
-        const n = parseInt(palStr, 10);
-        if (!isNaN(n)) number = n;
-        line1 = "Palette";
-      } else if (regStr) {
+      // Normalfall: 14.4.2
+      if (regStr) {
         const parts = regStr.split(".");
         const feld = parts[0] || "";
         const fach = parts[1] || "";
         const pos  = parts[2] || "";
 
-        const n = parseInt(feld, 10);
-        if (!isNaN(n)) number = n;
+        let number = feld;
+        let line1 = "";
+        let line2 = "";
 
         if (fach) line1 = `Fach ${fach}`;
         if (pos)  line2 = `Pos. ${pos}`;
-      } else {
-        number = "X";
-        line1  = "kein Lagerplatz vergeben";
+
+        return { number, line1, line2 };
       }
 
-      return { number, line1, line2 };
+      // sollte wegen Row-Filter praktisch nicht vorkommen:
+      return { number: "X", line1: "kein Lagerplatz vergeben", line2: "" };
     }
 
     function showOnlyResultMode() {
@@ -953,7 +920,6 @@
 
         const matName = selectedButton || "";
         const dimsTxt = dimsDisplayShort || "";
-
         lineDiv.textContent = (matName && dimsTxt) ? `${matName} | ${dimsTxt}` : (matName || dimsTxt);
 
         const shelf = document.createElement("div");
@@ -978,7 +944,6 @@
       });
 
       resultsColumn.appendChild(createNewSearchButton());
-
       wrapper.appendChild(resultsColumn);
 
       const planWrapper = createLayoutPlan(highlightNumbers);
@@ -1019,7 +984,6 @@
 
       const matName = selectedButton || "";
       const dimsTxt = dimsDisplayShort || "";
-
       lineDiv.textContent = (matName && dimsTxt) ? `${matName} | ${dimsTxt}` : (matName || dimsTxt || "");
 
       const shelf = document.createElement("div");
@@ -1042,7 +1006,6 @@
 
       resultsColumn.appendChild(main);
       resultsColumn.appendChild(createNewSearchButton());
-
       wrapper.appendChild(resultsColumn);
 
       const planWrapper = createLayoutPlan(null);
@@ -1069,10 +1032,7 @@
 
       const matches = [];
       for (const p of currentPairs) {
-        if (
-          (p.height === v1 && p.width === v2) ||
-          (p.height === v2 && p.width === v1)
-        ) {
+        if ((p.height === v1 && p.width === v2) || (p.height === v2 && p.width === v1)) {
           matches.push(p.row);
         }
       }
@@ -1086,10 +1046,9 @@
       fillSelect(select2, "Maß 2", currentDims, null);
     }
 
-    /* --- SAP Suche (4-stellig oder 10-stellig) --- */
     function normalizeSapInput(raw) {
       if (!raw) return "";
-      const digits = String(raw).replace(/[^\d]/g, ""); // nur Ziffern
+      const digits = String(raw).replace(/[^\d]/g, "");
       if (/^\d{4}$/.test(digits)) return "790000" + digits;
       if (/^\d{10}$/.test(digits)) return digits;
       return "";
@@ -1104,6 +1063,9 @@
       }
 
       const matches = dataRows.filter(r => {
+        // <<< NEU: Zeilen ohne Regal Säge komplett ignorieren
+        if (!rowHasRegalSaege(r)) return false;
+
         const mat = r["Material"] != null ? String(r["Material"]).trim() : "";
         return mat === norm;
       });
@@ -1116,11 +1078,10 @@
       }
     }
 
-    /* Sternchen komfortabel ersetzen */
     function focusSapStars() {
       const v = sapSearchInput.value || "";
       if (v === "790000****") {
-        sapSearchInput.setSelectionRange(6, 10); // **** markieren
+        sapSearchInput.setSelectionRange(6, 10);
       }
     }
 
