@@ -13,9 +13,7 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -60,15 +58,74 @@
       white-space: nowrap;
     }
 
-    .excel-button span.icon {
-      font-size: 1.1rem;
-    }
+    .excel-button span.icon { font-size: 1.1rem; }
 
     .status-text {
       font-size: 0.8rem;
       color: #555;
       text-align: right;
       flex: 1;
+    }
+
+    /* --- NEU: SAP-Suche --- */
+    .sap-search {
+      margin: 12px 0 6px;
+      padding-top: 8px;
+      border-top: 1px solid #d8dee8; /* optisch abgesetzt */
+    }
+
+    .sap-label {
+      font-size: 0.9rem;
+      color: #333;
+      margin: 0 0 6px;
+      font-weight: 700;
+    }
+
+    .sap-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sap-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: #ffffff;
+      border: 1px solid #cdd4e0;
+      display: grid;
+      place-items: center;
+      flex: 0 0 34px;
+      overflow: hidden;
+    }
+
+    .sap-icon img {
+      width: 24px;
+      height: 24px;
+      object-fit: contain;
+      display: block;
+    }
+
+    .sap-input {
+      flex: 1;
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 1.05rem;
+      border-radius: 12px;
+      border: 1px solid #cdd4e0;
+      background: #ffffff;
+      outline: none;
+    }
+
+    .sap-go {
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: none;
+      background: #0050a0;
+      color: #fff;
+      cursor: pointer;
+      font-size: 1.05rem;
+      white-space: nowrap;
     }
 
     .materials {
@@ -88,14 +145,9 @@
       cursor: pointer;
     }
 
-    .mat-btn.active {
-      background: #0050a0;
-    }
+    .mat-btn.active { background: #0050a0; }
 
-    .dimension-area {
-      margin-top: 8px;
-      display: none;
-    }
+    .dimension-area { margin-top: 8px; display: none; }
 
     .dim-row-selects {
       display: grid;
@@ -104,9 +156,7 @@
       margin-bottom: 6px;
     }
 
-    .dim-picker {
-      position: relative;
-    }
+    .dim-picker { position: relative; }
 
     select {
       width: 100%;
@@ -150,7 +200,6 @@
       justify-content: center;
     }
 
-    /* Wrapper um Ergebnis + Lageplan nebeneinander */
     .result-wrapper {
       display: flex;
       flex-wrap: wrap;
@@ -160,7 +209,6 @@
       width: 100%;
     }
 
-    /* Mehrere Ergebnis-Karten: waagrecht nebeneinander, mit Zeilenumbruch */
     .results-column {
       display: flex;
       flex-wrap: wrap;
@@ -174,7 +222,7 @@
       align-items: center;
       gap: 6px;
       max-width: 260px;
-      transform: scale(0.85);          /* ca. 15 % kleiner */
+      transform: scale(0.85);
       transform-origin: top center;
     }
 
@@ -242,13 +290,10 @@
       text-align: center;
     }
 
-    /* Button „Neue Suche“ soll eigene Zeile bekommen */
     .results-new-search {
       flex-basis: 100%;
       margin-top: 8px;
     }
-
-    /* --- LAGEPLAN-STYLES --- */
 
     .layout-plan-wrapper {
       margin-top: 4px;
@@ -261,18 +306,17 @@
     .layout-plan {
       position: relative;
       width: 100%;
-      aspect-ratio: 6 / 13; /* 6 Spalten, 13 Reihen */
+      aspect-ratio: 6 / 13;
       border-radius: 10px;
       background: #f9fafb;
       overflow: hidden;
     }
 
-    /* äußerer 6x13-Rahmen */
     .layout-plan::before {
       content: "";
       position: absolute;
       inset: 0;
-      border: 3px solid #111827; /* Anthrazit */
+      border: 3px solid #111827;
       border-radius: 10px;
       box-sizing: border-box;
       z-index: 3;
@@ -308,7 +352,6 @@
       z-index: 4;
     }
 
-    /* Rahmen um 1–4 (A,B bis A,E = Zeile 0, Spalten 1–4) */
     .layout-plan-frame-top {
       top: 0%;
       left: calc(100% * 1 / 6);
@@ -316,7 +359,6 @@
       height: calc(100% * 1 / 13);
     }
 
-    /* Rahmen um 9–13 (D,C bis H,D = Zeilen 3–7, Spalten 2–3) */
     .layout-plan-frame-middle {
       top: calc(100% * 3 / 13);
       left: calc(100% * 2 / 6);
@@ -324,7 +366,6 @@
       height: calc(100% * 5 / 13);
     }
 
-    /* Rahmen um 15–19–17–18 (K–M, Spalten C–D = Zeilen 10–12, Spalten 2–3) */
     .layout-plan-frame-bottom {
       top: calc(100% * 10 / 13);
       left: calc(100% * 2 / 6);
@@ -332,7 +373,6 @@
       height: calc(100% * 3 / 13);
     }
 
-    /* Strichpunktierte Doppel-Linie (nur oben) */
     .layout-plan-break {
       position: absolute;
       left: -20%;
@@ -345,12 +385,8 @@
       z-index: 5;
     }
 
-    /* Zwischen B und C – leicht darunter */
-    .layout-plan-break-top {
-      top: 15%;
-    }
+    .layout-plan-break-top { top: 15%; }
 
-    /* „Du bist hier“-Pin (Computerstandplatz) im Quadranten CA */
     .layout-plan-standpoint {
       position: absolute;
       left: -5%;
@@ -375,9 +411,7 @@
     }
 
     @media (min-width: 768px) {
-      .app {
-        max-width: 640px;
-      }
+      .app { max-width: 640px; }
     }
   </style>
 </head>
@@ -386,7 +420,7 @@
   <!-- Sicherheitscode-Schutz -->
   <script>
     (function () {
-      const CODE = "SägeBO"; // Sicherheitscode anpassbar
+      const CODE = "SägeBO";
       const ACCESS_KEY = "materialFinderAccessOk";
 
       try {
@@ -435,6 +469,25 @@
 
       <input type="file" id="excelInput" accept=".xlsx,.xls" style="display:none" />
 
+      <!-- NEU: SAP-Suche -->
+      <div class="sap-search">
+        <div class="sap-label">Nach SAP-Nummer suchen</div>
+        <div class="sap-row">
+          <div class="sap-icon" aria-hidden="true">
+            <img src="materialfinder_icon.png" alt="">
+          </div>
+          <input
+            id="sapSearchInput"
+            class="sap-input"
+            type="text"
+            inputmode="numeric"
+            placeholder="790000****"
+            autocomplete="off"
+          />
+          <button class="sap-go" id="sapSearchBtn">Suchen</button>
+        </div>
+      </div>
+
       <div class="materials" id="materialsContainer"></div>
 
       <div class="dimension-area" id="dimensionArea">
@@ -467,7 +520,8 @@
       "K490",
       "Tenasteel",
       "Toolox",
-      "S790"        // <- neu
+      "S790",
+      "M200" // <- NEU
     ];
 
     let dataRows = [];
@@ -488,52 +542,18 @@
     const resultArea = document.getElementById("resultArea");
     const searchSection = document.getElementById("searchSection");
 
+    const sapSearchInput = document.getElementById("sapSearchInput");
+    const sapSearchBtn = document.getElementById("sapSearchBtn");
+
     const demoData = [
-      {
-        Material: "7900001001",
-        Materialnummer: "K110 10x40x1000mm",
-        "Regal Säge": "5.1.1",
-        Palette: "",
-        K: ""
-      },
-      {
-        Material: "7900001002",
-        Materialnummer: "K110 20x50x1000mm",
-        "Regal Säge": "6.2.1",
-        Palette: "",
-        K: ""
-      },
-      {
-        Material: "7900001003",
-        Materialnummer: "K490 20*20*1000mm",
-        "Regal Säge": "7.3.2",
-        Palette: "",
-        K: ""
-      },
-      {
-        Material: "7900002001",
-        Materialnummer: "W300 8*20*1000mm",
-        "Regal Säge": "",
-        Palette: "",
-        K: ""
-      },
-      {
-        Material: "7900002002",
-        Materialnummer: "W300 15,4*20,4*500mm",
-        "Regal Säge": "",
-        Palette: "4",
-        K: ""
-      },
-      {
-        Material: "7900003001",
-        Materialnummer: "TOOLO* 44 12*50*1000mm",
-        "Regal Säge": "3.1.1",
-        Palette: "",
-        K: ""
-      }
+      { Material:"7900001001", Materialnummer:"K110 10x40x1000mm", "Regal Säge":"5.1.1", Palette:"", K:"" },
+      { Material:"7900001002", Materialnummer:"K110 20x50x1000mm", "Regal Säge":"6.2.1", Palette:"", K:"" },
+      { Material:"7900001003", Materialnummer:"K490 20*20*1000mm", "Regal Säge":"7.3.2", Palette:"", K:"" },
+      { Material:"7900002001", Materialnummer:"W300 8*20*1000mm",  "Regal Säge":"",     Palette:"", K:"" },
+      { Material:"7900002002", Materialnummer:"W300 15,4*20,4*500mm","Regal Säge":"",    Palette:"4", K:"" },
+      { Material:"7900003001", Materialnummer:"TOOLO* 44 12*50*1000mm","Regal Säge":"3.1.1",Palette:"",K:"" }
     ];
 
-    /* --- Lageplan-Konfiguration: Regale 1–19 auf 6x13-Raster --- */
     const LAYOUT_SHELVES = [
       { id: 1,  row: 0, col: 1 },
       { id: 2,  row: 0, col: 2 },
@@ -559,24 +579,17 @@
       { id: 18, row: 12, col: 3 }
     ];
 
-    /* --- NEU: Material-Filter-Funktion,
-           damit „Toolox“-Button auch „TOOLO* 33/44“ findet --- */
     function materialMatchesButton(mbStr, buttonName) {
-      const lower = mbStr.toLowerCase();
-      const bName = buttonName.toLowerCase();
+      const lower = String(mbStr).toLowerCase();
+      const bName = String(buttonName).toLowerCase();
 
       if (bName === "toolox") {
-        // Alles, was offensichtlich Toolox ist:
         return (
           lower.includes("toolox") ||
-          lower.includes("toolo* 33") ||
-          lower.includes("toolo*33") ||
-          lower.includes("toolo* 44") ||
-          lower.includes("toolo*44")
+          lower.includes("toolo* 33") || lower.includes("toolo*33") ||
+          lower.includes("toolo* 44") || lower.includes("toolo*44")
         );
       }
-
-      // Standardfall: einfacher includes-Check
       return lower.includes(bName);
     }
 
@@ -601,15 +614,13 @@
       LAYOUT_SHELVES.forEach(shelf => {
         const cell = document.createElement("div");
         cell.className = "layout-plan-cell";
-        if (highlights.includes(shelf.id)) {
-          cell.classList.add("active");
-        }
+        if (highlights.includes(shelf.id)) cell.classList.add("active");
         cell.textContent = shelf.id;
 
         cell.style.width = cellWidth;
         cell.style.height = cellHeight;
         cell.style.left = `calc(100% * ${shelf.col} / 6)`;
-        cell.style.top = `calc(100% * ${shelf.row} / 13)`;
+        cell.style.top  = `calc(100% * ${shelf.row} / 13)`;
 
         plan.appendChild(cell);
       });
@@ -639,11 +650,9 @@
     }
 
     function updateStatusText() {
-      if (usingExcel) {
-        statusTextEl.textContent = `Excel-Daten aktiv: ${dataRows.length} Datensätze.`;
-      } else {
-        statusTextEl.textContent = "Keine Excel-Daten importiert (Demo-Fallback aktiv).";
-      }
+      statusTextEl.textContent = usingExcel
+        ? `Excel-Daten aktiv: ${dataRows.length} Datensätze.`
+        : "Keine Excel-Daten importiert (Demo-Fallback aktiv).";
     }
 
     function hasDurchmesser(str) {
@@ -658,7 +667,6 @@
       if (!matBez) return null;
       let s = String(matBez);
 
-      // Bei Toolox-Texten erst NACH "TOOLO* 33/44" die Maße betrachten
       const markerRegex = /toolo\*\s*33|toolo\*\s*44/i;
       const markerMatch = s.match(markerRegex);
       if (markerMatch) {
@@ -666,9 +674,7 @@
         s = s.slice(idx);
       }
 
-      if (hasDurchmesser(s)) {
-        return null;
-      }
+      if (hasDurchmesser(s)) return null;
 
       const regex = /(\d+(?:[.,]\d+)?)\s*[xX*]\s*(\d+(?:[.,]\d+)?)/;
       const match = s.match(regex);
@@ -682,19 +688,9 @@
       if (isNaN(numA) || isNaN(numB)) return null;
 
       if (numA <= numB) {
-        return {
-          height: numA,
-          width: numB,
-          heightLabel: rawA,
-          widthLabel: rawB
-        };
+        return { height:numA, width:numB, heightLabel:rawA, widthLabel:rawB };
       } else {
-        return {
-          height: numB,
-          width: numA,
-          heightLabel: rawB,
-          widthLabel: rawA
-        };
+        return { height:numB, width:numA, heightLabel:rawB, widthLabel:rawA };
       }
     }
 
@@ -743,30 +739,18 @@
         if (!mb) return;
 
         const mbStr = String(mb);
-
-        // <<< HIER wird jetzt die neue Matching-Funktion verwendet
-        if (!materialMatchesButton(mbStr, name)) {
-          return;
-        }
+        if (!materialMatchesButton(mbStr, name)) return;
 
         const dims = extractFirstDimPair(mbStr);
         if (!dims) return;
 
-        currentPairs.push({
-          row,
-          height: dims.height,
-          width: dims.width
-        });
+        currentPairs.push({ row, height:dims.height, width:dims.width });
 
         dimSet.add(dims.height);
         dimSet.add(dims.width);
 
-        if (!dimLabelMap.has(dims.height)) {
-          dimLabelMap.set(dims.height, dims.heightLabel);
-        }
-        if (!dimLabelMap.has(dims.width)) {
-          dimLabelMap.set(dims.width, dims.widthLabel);
-        }
+        if (!dimLabelMap.has(dims.height)) dimLabelMap.set(dims.height, dims.heightLabel);
+        if (!dimLabelMap.has(dims.width))  dimLabelMap.set(dims.width,  dims.widthLabel);
       });
 
       currentDims = Array.from(dimSet).sort((a, b) => a - b);
@@ -776,12 +760,7 @@
       fillSelect(select1, "Maß 1", currentDims, null);
       fillSelect(select2, "Maß 2", currentDims, null);
 
-      if (currentDims.length > 0) {
-        dimensionArea.style.display = "block";
-      } else {
-        dimensionArea.style.display = "none";
-      }
-
+      dimensionArea.style.display = currentDims.length > 0 ? "block" : "none";
       clearResultArea();
     }
 
@@ -797,28 +776,21 @@
       dims.forEach(v => {
         const opt = document.createElement("option");
         opt.value = String(v);
-        const label = dimLabelMap.get(v) ?? String(v);
-        opt.textContent = label;
+        opt.textContent = dimLabelMap.get(v) ?? String(v);
         selectEl.appendChild(opt);
       });
 
-      if (prev != null && dims.includes(prev)) {
-        selectEl.value = String(prev);
-      } else {
-        selectEl.value = "";
-      }
+      selectEl.value = (prev != null && dims.includes(prev)) ? String(prev) : "";
     }
 
     function computeAllowedDims(fixedDim) {
-      if (!fixedDim) {
-        return currentDims.slice();
-      }
+      if (!fixedDim) return currentDims.slice();
       const set = new Set();
       currentPairs.forEach(p => {
         if (p.height === fixedDim) set.add(p.width);
-        if (p.width === fixedDim) set.add(p.height);
+        if (p.width  === fixedDim) set.add(p.height);
       });
-      return Array.from(set).sort((a, b) => a - b);
+      return Array.from(set).sort((a,b)=>a-b);
     }
 
     function onSelectChange(fromSelect) {
@@ -842,50 +814,38 @@
     }
 
     function getLagerplatzInfo(row) {
-      const kRaw = row["K"];
+      const kRaw   = row["K"];
       const regRaw = row["Regal Säge"];
       const palRaw = row["Palette"];
 
-      const kStr = kRaw != null ? String(kRaw).trim().toUpperCase() : "";
+      const kStr   = kRaw   != null ? String(kRaw).trim().toUpperCase() : "";
       const regStr = regRaw != null ? String(regRaw).trim() : "";
       const palStr = palRaw != null ? String(palRaw).trim() : "";
 
-      // K-Sonderlogik (Keller / läuft aus)
-      if (kStr === "KX" || kStr === "XK") {
-        return { number: "K", line1: "Keller, läuft aus", line2: "" };
-      }
-      if (kStr === "K") {
-        return { number: "K", line1: "Keller", line2: "" };
-      }
-      if (kStr === "X") {
-        return { number: "", line1: "Läuft aus, kein Lagerplatz vergeben", line2: "" };
-      }
-
-      let number = null;
-      let line1 = "";
-      let line2 = "";
+      if (kStr === "KX" || kStr === "XK") return { number:"K", line1:"Keller, läuft aus", line2:"" };
+      if (kStr === "K")                 return { number:"K", line1:"Keller", line2:"" };
+      if (kStr === "X")                 return { number:"",  line1:"Läuft aus, kein Lagerplatz vergeben", line2:"" };
 
       if (palStr) {
         const n = parseInt(palStr, 10);
-        if (!isNaN(n)) number = n;
-        line1 = "Palette";
-      } else if (regStr) {
+        return { number:(!isNaN(n)?n:""), line1:"Palette", line2:"" };
+      }
+
+      if (regStr) {
         const parts = regStr.split(".");
         const feld = parts[0] || "";
         const fach = parts[1] || "";
         const pos  = parts[2] || "";
-
         const n = parseInt(feld, 10);
-        if (!isNaN(n)) number = n;
 
-        if (fach) line1 = `Fach ${fach}`;
-        if (pos)  line2 = `Pos. ${pos}`;
-      } else {
-        number = "X";
-        line1  = "kein Lagerplatz vergeben";
+        return {
+          number: (!isNaN(n) ? n : ""),
+          line1: fach ? `Fach ${fach}` : "",
+          line2: pos  ? `Pos. ${pos}` : ""
+        };
       }
 
-      return { number, line1, line2 };
+      return { number:"X", line1:"kein Lagerplatz vergeben", line2:"" };
     }
 
     function showOnlyResultMode() {
@@ -917,14 +877,12 @@
       const highlightNumbers = [];
 
       rows.forEach(row => {
-        const matFull = row["Material"] != null ? String(row["Material"]).trim() : "";
+        const matFull  = row["Material"] != null ? String(row["Material"]).trim() : "";
         const matShort = matFull ? matFull.slice(-4) : "----";
 
         const { number, line1, line2 } = getLagerplatzInfo(row);
         const nNum = parseInt(number, 10);
-        if (!isNaN(nNum)) {
-          highlightNumbers.push(nNum);
-        }
+        if (!isNaN(nNum)) highlightNumbers.push(nNum);
 
         const main = document.createElement("div");
         main.className = "result-main";
@@ -934,7 +892,7 @@
 
         const numBig = document.createElement("div");
         numBig.className = "result-number-big";
-        numBig.textContent = number != null ? String(number) : "-";
+        numBig.textContent = (number != null) ? String(number) : "-";
         card.appendChild(numBig);
 
         const fachDiv = document.createElement("div");
@@ -955,10 +913,7 @@
         const matName = selectedButton || "";
         const dimsTxt = dimsDisplayShort || "";
 
-        lineDiv.textContent =
-          (matName && dimsTxt)
-            ? `${matName} | ${dimsTxt}`
-            : (matName || dimsTxt);
+        lineDiv.textContent = (matName && dimsTxt) ? `${matName} | ${dimsTxt}` : (matName || dimsTxt);
 
         const shelf = document.createElement("div");
         shelf.className = "result-shelf";
@@ -966,14 +921,11 @@
         const shelfInner = document.createElement("div");
         shelfInner.className = "result-shelf-inner";
         shelfInner.textContent = matShort || "----";
-
         shelf.appendChild(shelfInner);
 
         const infoDiv = document.createElement("div");
         infoDiv.className = "result-info";
-        infoDiv.textContent = matFull
-          ? `Material: ${matFull}`
-          : "Kein Material vorhanden";
+        infoDiv.textContent = matFull ? `Material: ${matFull}` : "Kein Material vorhanden";
 
         main.appendChild(card);
         main.appendChild(lineDiv);
@@ -984,7 +936,6 @@
       });
 
       resultsColumn.appendChild(createNewSearchButton());
-
       wrapper.appendChild(resultsColumn);
 
       const planWrapper = createLayoutPlan(highlightNumbers);
@@ -1022,22 +973,15 @@
 
       const lineDiv = document.createElement("div");
       lineDiv.className = "result-line";
-
       const matName = selectedButton || "";
       const dimsTxt = dimsDisplayShort || "";
-
-      lineDiv.textContent =
-        (matName && dimsTxt)
-          ? `${matName} | ${dimsTxt}`
-          : (matName || dimsTxt || "");
+      lineDiv.textContent = (matName && dimsTxt) ? `${matName} | ${dimsTxt}` : (matName || dimsTxt || "");
 
       const shelf = document.createElement("div");
       shelf.className = "result-shelf";
-
       const shelfInner = document.createElement("div");
       shelfInner.className = "result-shelf-inner";
       shelfInner.textContent = "----";
-
       shelf.appendChild(shelfInner);
 
       const infoDiv = document.createElement("div");
@@ -1051,7 +995,6 @@
 
       resultsColumn.appendChild(main);
       resultsColumn.appendChild(createNewSearchButton());
-
       wrapper.appendChild(resultsColumn);
 
       const planWrapper = createLayoutPlan(null);
@@ -1078,24 +1021,58 @@
 
       const matches = [];
       for (const p of currentPairs) {
-        if (
-          (p.height === v1 && p.width === v2) ||
-          (p.height === v2 && p.width === v1)
-        ) {
+        if ((p.height === v1 && p.width === v2) || (p.height === v2 && p.width === v1)) {
           matches.push(p.row);
         }
       }
 
-      if (matches.length > 0) {
-        showResults(matches, dimsDisplayShort);
-      } else {
-        showNoResult(dimsDisplayShort, "Material in diesen Abmessungen nicht vorhanden.");
-      }
+      if (matches.length > 0) showResults(matches, dimsDisplayShort);
+      else showNoResult(dimsDisplayShort, "Material in diesen Abmessungen nicht vorhanden.");
 
       selectedDim1 = null;
       selectedDim2 = null;
       fillSelect(select1, "Maß 1", currentDims, null);
       fillSelect(select2, "Maß 2", currentDims, null);
+    }
+
+    /* --- NEU: SAP-Suche Logik --- */
+    function normalizeSapInput(raw) {
+      if (!raw) return "";
+      const s = String(raw).trim();
+
+      // nur Ziffern + * zulassen (damit "790000****" nicht kaputt ist)
+      const cleaned = s.replace(/[^\d*]/g, "");
+
+      // Wenn nur 4 Ziffern: vorne 790000 ergänzen
+      if (/^\d{4}$/.test(cleaned)) return "790000" + cleaned;
+
+      // Wenn 10 Ziffern: passt
+      if (/^\d{10}$/.test(cleaned)) return cleaned;
+
+      return ""; // ungültig
+    }
+
+    function searchBySap() {
+      const norm = normalizeSapInput(sapSearchInput.value);
+
+      if (!norm) {
+        showNoResult("", "Bitte 4 oder 10 Ziffern eingeben (z.B. 1234 oder 7900001234).");
+        return;
+      }
+
+      const matches = dataRows.filter(r => {
+        const mat = r["Material"] != null ? String(r["Material"]).trim() : "";
+        return mat === norm;
+      });
+
+      if (matches.length > 0) {
+        // Button/Zeile oberhalb: bei SAP-Suche zeigen wir in der Zeile keine Materialbezeichnung/ Maße an
+        // (du wolltest: gleiche Ergebnisausgabe wie sonst → die Karten sind gleich; nur die lineDiv bleibt leer)
+        selectedButton = ""; // damit "matName | dims" nicht irritiert
+        showResults(matches, "");
+      } else {
+        showNoResult("", `Material ${norm} nicht gefunden.`);
+      }
     }
 
     document.getElementById("excelBtn").addEventListener("click", () => {
@@ -1134,6 +1111,15 @@
     select1.addEventListener("change", () => onSelectChange(1));
     select2.addEventListener("change", () => onSelectChange(2));
     document.getElementById("searchBtn").addEventListener("click", onSearch);
+
+    // SAP: Button + Enter
+    sapSearchBtn.addEventListener("click", searchBySap);
+    sapSearchInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        searchBySap();
+      }
+    });
 
     (function init() {
       try {
