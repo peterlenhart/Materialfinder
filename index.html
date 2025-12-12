@@ -516,6 +516,7 @@
     }
 
     const STORAGE_KEY = "materialFinderDataV2";
+    const EXCEL_FILENAME = "Rohmaterialliste_NEU_V1.5.xlsx"; // <-- Fixer Dateiname
 
     const MATERIAL_BUTTONS = [
       "W300","K110","K945","K490","Tenasteel","Toolox","S790","M200"
@@ -576,10 +577,16 @@
       { id: 18, row: 12, col: 3 }
     ];
 
+    // ✅ STRIKT: Leere "Regal Säge" Zeilen zählen nicht (als gäbe es sie nicht)
     function isRowUsable(row) {
       const regRaw = row["Regal Säge"];
-      const regStr = regRaw != null ? String(regRaw).trim() : "";
-      return regStr.length > 0;
+      const regStr = (regRaw == null ? "" : String(regRaw)).trim();
+
+      if (!regStr) return false;
+      // auch "-" oder "." etc. als leer behandeln
+      if (/^[-–—.]+$/.test(regStr)) return false;
+
+      return true;
     }
 
     function materialMatchesButton(mbStr, buttonName) {
@@ -727,7 +734,6 @@
     }
 
     function onMaterialButtonClick(name, btnElement) {
-      // Wenn jemand nach SAP gesucht hat und dann Buttons nutzt: SAP-Error weg + Feld neutral
       sapError.style.display = "none";
 
       selectedButton = name;
@@ -1070,9 +1076,40 @@
       document.getElementById("excelInput").click();
     });
 
+    // ✅ Optional: Auto-Load Versuch aus dem gleichen Ordner (wenn Browser es zulässt)
+    async function tryAutoLoadExcelFromSameFolder() {
+      try {
+        const resp = await fetch("./" + EXCEL_FILENAME, { cache: "no-store" });
+        if (!resp.ok) return false;
+
+        const buf = await resp.arrayBuffer();
+        const workbook = XLSX.read(new Uint8Array(buf), { type: "array" });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+
+        // ✅ HIER wird garantiert schon rausgefiltert
+        dataRows = json.filter(isRowUsable);
+        usingExcel = true;
+
+        updateStatusText();
+        buildMaterialButtons();
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(dataRows));
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
     document.getElementById("excelInput").addEventListener("change", (evt) => {
       const file = evt.target.files[0];
       if (!file) return;
+
+      // ✅ Dateiname MUSS exakt passen
+      if (file.name !== EXCEL_FILENAME) {
+        alert(`Bitte genau diese Datei auswählen:\n${EXCEL_FILENAME}\n\nDu hast gewählt:\n${file.name}`);
+        evt.target.value = "";
+        return;
+      }
 
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -1082,8 +1119,10 @@
           const sheet = workbook.Sheets[workbook.SheetNames[0]];
           const json = XLSX.utils.sheet_to_json(sheet, { defval: "" });
 
-          dataRows = json;
+          // ✅ HIER wird garantiert schon rausgefiltert
+          dataRows = json.filter(isRowUsable);
           usingExcel = true;
+
           updateStatusText();
           buildMaterialButtons();
           localStorage.setItem(STORAGE_KEY, JSON.stringify(dataRows));
@@ -1102,19 +1141,25 @@
     select2.addEventListener("change", () => onSelectChange(2));
     document.getElementById("searchBtn").addEventListener("click", onSearch);
 
-    (function init() {
-      try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-          dataRows = JSON.parse(saved);
-          usingExcel = true;
-        } else {
+    (async function init() {
+      // 1) Auto-Load versuchen
+      const autoOk = await tryAutoLoadExcelFromSameFolder();
+
+      // 2) Wenn Auto-Load nicht ging: saved oder demo
+      if (!autoOk) {
+        try {
+          const saved = localStorage.getItem(STORAGE_KEY);
+          if (saved) {
+            dataRows = JSON.parse(saved);
+            usingExcel = true;
+          } else {
+            dataRows = demoData.slice();
+            usingExcel = false;
+          }
+        } catch (e) {
           dataRows = demoData.slice();
           usingExcel = false;
         }
-      } catch (e) {
-        dataRows = demoData.slice();
-        usingExcel = false;
       }
 
       updateStatusText();
