@@ -9,8 +9,8 @@
   <link rel="icon" href="materialfinder_icon.png" type="image/png" />
   <link rel="apple-touch-icon" href="materialfinder_icon.png" />
 
-  <!-- Excel-Library LOKAL (offline) -->
-  <script src="./xlsx.full.min.js"></script>
+  <!-- ✅ LOKAL statt CDN -->
+  <script src="js/xlsx.full.min.js"></script>
 
   <style>
     * { box-sizing: border-box; }
@@ -67,6 +67,62 @@
       flex: 1;
     }
 
+    /* --- SAP Suche --- */
+    .sap-search {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 12px 0 4px;
+    }
+
+    .sap-icon {
+      width: 28px;
+      height: 28px;
+      flex: 0 0 28px;
+      display: block;
+    }
+
+    .sap-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .sap-label {
+      font-size: 0.9rem;
+      color: #333;
+      font-weight: 600;
+    }
+
+    .sap-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .sap-input {
+      flex: 1;
+      padding: 10px 12px;
+      font-size: 1.05rem;
+      border-radius: 12px;
+      border: 1px solid #cdd4e0;
+      background: #ffffff;
+      min-width: 0;
+    }
+
+    .sap-btn {
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: none;
+      background: #0050a0;
+      color: #fff;
+      cursor: pointer;
+      font-size: 1.05rem;
+      white-space: nowrap;
+    }
+
     .materials {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
@@ -86,77 +142,10 @@
 
     .mat-btn.active { background: #0050a0; }
 
-    /* --- SAP Suche --- */
-    .sap-search-wrap {
-      margin: 6px 0 12px;
-      padding: 10px 12px;
-      border-radius: 14px;
-      background: #eef2f7;
-      border: 1px solid #cdd4e0;
-      display: grid;
-      grid-template-columns: 26px 1fr;
-      gap: 10px;
-      align-items: center;
-    }
-
-    .sap-search-wrap img {
-      width: 22px;
-      height: 22px;
-      display: block;
-    }
-
-    .sap-search-col { display: grid; gap: 6px; }
-
-    .sap-search-label {
-      font-size: 0.85rem;
-      color: #374151;
-      font-weight: 700;
-      margin: 0;
-    }
-
-    .sap-search-row {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 8px;
-      align-items: center;
-    }
-
-    .sap-input {
-      width: 100%;
-      padding: 10px 12px;
-      font-size: 1.05rem;
-      border-radius: 12px;
-      border: 1px solid #cdd4e0;
-      background: #fff;
-      outline: none;
-    }
-
-    .sap-go-btn {
-      padding: 10px 12px;
-      border-radius: 12px;
-      border: none;
-      background: #0050a0;
-      color: #fff;
-      font-weight: 800;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-
-    .sap-hint {
-      font-size: 0.8rem;
-      color: #6b7280;
-      margin: 0;
-    }
-
-    .sap-error {
-      font-size: 0.9rem;
-      font-weight: 800;
-      color: #b91c1c;
-      margin: 0;
+    .dimension-area {
+      margin-top: 8px;
       display: none;
     }
-
-    .dimension-area { margin-top: 8px; display: none; }
 
     .dim-row-selects {
       display: grid;
@@ -211,18 +200,22 @@
 
     .result-wrapper {
       display: flex;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       align-items: flex-start;
       justify-content: center;
       gap: 16px;
       width: 100%;
     }
 
+    /* ✅ WICHTIG: links bündig + wrap => nebeneinander, dann neue Zeile links */
     .results-column {
       display: flex;
       flex-wrap: wrap;
       gap: 12px;
-      justify-content: center;
+      justify-content: flex-start;
+      align-content: flex-start;
+      width: calc(100% - 240px);
+      min-width: 220px;
     }
 
     .result-main {
@@ -232,7 +225,7 @@
       gap: 6px;
       max-width: 260px;
       transform: scale(0.85);
-      transform-origin: top center;
+      transform-origin: top left;
     }
 
     .result-card {
@@ -268,6 +261,7 @@
       font-weight: 600;
       color: #000;
       margin-top: 2px;
+      text-align: center;
     }
 
     .result-shelf {
@@ -422,46 +416,18 @@
 
     @media (min-width: 768px) {
       .app { max-width: 640px; }
+      .results-column { width: calc(100% - 240px); }
+    }
+
+    @media (max-width: 520px) {
+      .result-wrapper { flex-wrap: wrap; }
+      .results-column { width: 100%; }
+      .layout-plan-wrapper { flex: 0 0 100%; max-width: 100%; }
     }
   </style>
 </head>
+
 <body>
-
-  <!-- Sicherheitscode-Schutz -->
-  <script>
-    (function () {
-      const CODE = "SägeBO";
-      const ACCESS_KEY = "materialFinderAccessOk";
-
-      try {
-        const ok = localStorage.getItem(ACCESS_KEY);
-        if (ok === "true") {
-          window.materialFinderAccessGranted = true;
-          return;
-        }
-
-        const eingabe = prompt("Bitte Sicherheitscode für den Material Finder eingeben:");
-        if (eingabe === CODE) {
-          localStorage.setItem(ACCESS_KEY, "true");
-          window.materialFinderAccessGranted = true;
-        } else {
-          window.materialFinderAccessGranted = false;
-          document.body.innerHTML = "";
-          alert("Zugriff verweigert.");
-        }
-      } catch (e) {
-        const eingabe = prompt("Bitte Sicherheitscode für den Material Finder eingeben:");
-        if (eingabe === CODE) {
-          window.materialFinderAccessGranted = true;
-        } else {
-          window.materialFinderAccessGranted = false;
-          document.body.innerHTML = "";
-          alert("Zugriff verweigert.");
-        }
-      }
-    })();
-  </script>
-
   <div class="app">
     <h1>Material Finder</h1>
 
@@ -472,23 +438,28 @@
           <span>Excel importieren</span>
         </button>
         <div class="status-text" id="statusText">
-          Keine Excel-Daten importiert (Demo-Fallback aktiv).
+          Keine Excel-Daten importiert (Demo aktiv).
         </div>
       </div>
 
       <input type="file" id="excelInput" accept=".xlsx,.xls" style="display:none" />
 
       <!-- SAP Suche -->
-      <div class="sap-search-wrap">
-        <img src="materialfinder_icon.png" alt="Icon" />
-        <div class="sap-search-col">
-          <p class="sap-search-label">Nach SAP-Nummer suchen</p>
-          <div class="sap-search-row">
-            <input id="sapSearchInput" class="sap-input" type="text" value="790000****" />
-            <button id="sapSearchBtn" class="sap-go-btn">Suchen</button>
+      <div class="sap-search">
+        <img class="sap-icon" src="materialfinder_icon.png" alt="icon" />
+        <div class="sap-col">
+          <div class="sap-label">Nach SAP-Nummer suchen.</div>
+          <div class="sap-row">
+            <input
+              id="sapSearchInput"
+              class="sap-input"
+              type="text"
+              inputmode="numeric"
+              value="790000****"
+              autocomplete="off"
+            />
+            <button id="sapSearchBtn" class="sap-btn">Suchen</button>
           </div>
-          <p id="sapError" class="sap-error">10-stellig!</p>
-          <p class="sap-hint">Letzte 4 Stellen ergänzen oder ganze 10-stellige Nummer eingeben.</p>
         </div>
       </div>
 
@@ -511,26 +482,27 @@
   </div>
 
   <script>
-    if (!window.materialFinderAccessGranted) {
-      throw new Error("Kein Zugriff auf Material Finder (Sicherheitscode falsch oder abgebrochen).");
-    }
+    // ===== Excel-Spalten (wie dein Screenshot) =====
+    const COL = {
+      KELLER: "Keller",
+      MATERIAL: "Material",
+      WERKSTOFF: "Werkstoff",
+      M1: "Maß 1",
+      M2: "Maß 2",
+      LAGER: "Lagerplatz"
+    };
 
-    const STORAGE_KEY = "materialFinderDataV2";
-    const EXCEL_FILENAME = "Rohmaterialliste_NEU_V1.5.xlsx";
-
-    const MATERIAL_BUTTONS = [
-      "W300","K110","K945","K490","Tenasteel","Toolox","S790","M200"
-    ];
+    const STORAGE_KEY = "materialFinderDataV4_local";
 
     let dataRows = [];
     let usingExcel = false;
-    let selectedButton = null;
 
-    let currentPairs = [];
+    let selectedWerkstoff = null;
+
+    let currentPairs = [];   // { row, a, b }
     let currentDims = [];
     let selectedDim1 = null;
     let selectedDim2 = null;
-    let dimLabelMap = new Map();
 
     const statusTextEl = document.getElementById("statusText");
     const materialsContainer = document.getElementById("materialsContainer");
@@ -542,16 +514,211 @@
 
     const sapSearchInput = document.getElementById("sapSearchInput");
     const sapSearchBtn = document.getElementById("sapSearchBtn");
-    const sapError = document.getElementById("sapError");
 
+    // Mini-Demo (damit du ohne Excel sofort siehst wie es läuft)
     const demoData = [
-      { Material: "7900001001", Materialnummer: "K110 10x40x1000mm", "Regal Säge": "5.1.1", K: "" },
-      { Material: "7900001002", Materialnummer: "K110 20x50x1000mm", "Regal Säge": "6.2.1", K: "" },
-      { Material: "7900001003", Materialnummer: "K490 20*20*1000mm", "Regal Säge": "7.3.2", K: "" },
-      { Material: "7900002002", Materialnummer: "W300 15,4*20,4*500mm", "Regal Säge": "4", K: "" },
-      { Material: "7900003001", Materialnummer: "TOOLO* 44 12*50*1000mm", "Regal Säge": "3.1.1", K: "" }
+      { Keller:"K", Material:"7900000247", Werkstoff:"Toolox", "Maß 1":62, "Maß 2":202, Lagerplatz:"11" },     // 2 Ausgaben: K + Lager
+      { Keller:"K", Material:"7900000249", Werkstoff:"Toolox", "Maß 1":51, "Maß 2":147, Lagerplatz:"7.1.1" },  // 2 Ausgaben
+      { Keller:"K", Material:"7900000301", Werkstoff:"W300",   "Maß 1":66, "Maß 2":203, Lagerplatz:"" }        // 1 Ausgabe: nur K
     ];
 
+    function trimStr(v){ return v==null ? "" : String(v).trim(); }
+    function toNumber(v){
+      const s = trimStr(v).replace(",", ".");
+      const n = parseFloat(s);
+      return isNaN(n) ? null : n;
+    }
+
+    function updateStatusText(){
+      statusTextEl.textContent = usingExcel
+        ? `Excel-Daten aktiv: ${dataRows.length} Datensätze.`
+        : "Keine Excel-Daten importiert (Demo aktiv).";
+    }
+
+    // gültig, wenn Werkstoff+Maße da sind UND mind. 1 Ort (Keller K oder Lagerplatz)
+    function isValidRow(row){
+      const w = trimStr(row[COL.WERKSTOFF]);
+      const a = toNumber(row[COL.M1]);
+      const b = toNumber(row[COL.M2]);
+      if(!w || a==null || b==null) return false;
+
+      const k = trimStr(row[COL.KELLER]).toUpperCase();
+      const lp = trimStr(row[COL.LAGER]);
+      if(!lp && k !== "K") return false;
+
+      return true;
+    }
+
+    function uniqueSortedText(arr){
+      const s = new Set();
+      arr.forEach(v => { const t = trimStr(v); if(t) s.add(t); });
+      return Array.from(s).sort((a,b)=>a.localeCompare(b,"de"));
+    }
+
+    function uniqueSortedNumeric(arr){
+      const s = new Set();
+      arr.forEach(v => { if(typeof v === "number") s.add(v); });
+      return Array.from(s).sort((a,b)=>a-b);
+    }
+
+    function setActiveButton(btn){
+      document.querySelectorAll(".mat-btn").forEach(b=>b.classList.remove("active"));
+      if(btn) btn.classList.add("active");
+    }
+
+    function clearResultArea(){
+      resultArea.innerHTML = "";
+      resultArea.style.display = "none";
+    }
+
+    function buildMaterialButtonsFromData(){
+      materialsContainer.innerHTML = "";
+      selectedWerkstoff = null;
+      currentPairs = [];
+      currentDims = [];
+      selectedDim1 = null;
+      selectedDim2 = null;
+
+      dimensionArea.style.display = "none";
+      clearResultArea();
+
+      const werkstoffe = uniqueSortedText(
+        dataRows.filter(isValidRow).map(r => r[COL.WERKSTOFF])
+      );
+
+      werkstoffe.forEach(name=>{
+        const btn = document.createElement("button");
+        btn.className = "mat-btn";
+        btn.textContent = name;
+        btn.addEventListener("click", ()=>onWerkstoffClick(name, btn));
+        materialsContainer.appendChild(btn);
+      });
+    }
+
+    function onWerkstoffClick(name, btn){
+      selectedWerkstoff = name;
+      setActiveButton(btn);
+
+      currentPairs = [];
+      const dims = [];
+
+      dataRows.forEach(row=>{
+        if(!isValidRow(row)) return;
+        if(trimStr(row[COL.WERKSTOFF]) !== name) return;
+
+        const a = toNumber(row[COL.M1]);
+        const b = toNumber(row[COL.M2]);
+        if(a==null || b==null) return;
+
+        currentPairs.push({ row, a, b });
+        dims.push(a, b);
+      });
+
+      currentDims = uniqueSortedNumeric(dims);
+      selectedDim1 = null;
+      selectedDim2 = null;
+
+      fillSelect(select1, "Maß 1", currentDims, null);
+      fillSelect(select2, "Maß 2", currentDims, null);
+
+      dimensionArea.style.display = currentDims.length ? "block" : "none";
+      clearResultArea();
+    }
+
+    function fillSelect(sel, placeholder, dims, keep){
+      sel.innerHTML = "";
+      const ph = document.createElement("option");
+      ph.value = "";
+      ph.textContent = placeholder;
+      sel.appendChild(ph);
+
+      dims.forEach(v=>{
+        const opt = document.createElement("option");
+        opt.value = String(v);
+        opt.textContent = Number.isInteger(v) ? String(v) : String(v);
+        sel.appendChild(opt);
+      });
+
+      sel.value = (keep!=null && dims.includes(keep)) ? String(keep) : "";
+    }
+
+    function computeAllowedDims(fixedDim){
+      if(!fixedDim) return currentDims.slice();
+      const set = new Set();
+      currentPairs.forEach(p=>{
+        if(p.a === fixedDim) set.add(p.b);
+        if(p.b === fixedDim) set.add(p.a);
+      });
+      return Array.from(set).sort((a,b)=>a-b);
+    }
+
+    function onSelectChange(from){
+      const v1 = select1.value ? Number(select1.value) : null;
+      const v2 = select2.value ? Number(select2.value) : null;
+
+      selectedDim1 = v1;
+      selectedDim2 = v2;
+
+      if(from===1){
+        const allowed2 = computeAllowedDims(selectedDim1);
+        const keep = allowed2.includes(selectedDim2) ? selectedDim2 : null;
+        if(!keep) selectedDim2 = null;
+        fillSelect(select2, "Maß 2", allowed2, keep);
+      } else {
+        const allowed1 = computeAllowedDims(selectedDim2);
+        const keep = allowed1.includes(selectedDim1) ? selectedDim1 : null;
+        if(!keep) selectedDim1 = null;
+        fillSelect(select1, "Maß 1", allowed1, keep);
+      }
+    }
+
+    // ===== Ausgabe-Regeln (deine 2 Bedingungen) =====
+    function buildAusgabenForRow(row){
+      const ausgaben = [];
+
+      const keller = trimStr(row[COL.KELLER]).toUpperCase(); // nur "K" oder leer
+      const lager  = trimStr(row[COL.LAGER]);
+
+      // Keller-Ausgabe wenn Keller = K
+      if(keller === "K"){
+        ausgaben.push({
+          kind: "KELLER",
+          number: "K",
+          line1: "Keller",
+          line2: ""
+        });
+      }
+
+      // Lager-Ausgabe wenn Lagerplatz vorhanden
+      if(lager){
+        // Palette: nur Ziffern
+        if(/^\d+$/.test(lager)){
+          ausgaben.push({
+            kind: "LAGER",
+            number: lager,
+            line1: "Palette",
+            line2: ""
+          });
+        } else {
+          const parts = lager.split(".");
+          const feld = parts[0] || "";
+          const fach = parts[1] || "";
+          const pos  = parts[2] || "";
+
+          ausgaben.push({
+            kind: "LAGER",
+            number: feld || "-",
+            line1: fach ? `Fach ${fach}` : "",
+            line2: pos ? `Pos. ${pos}` : ""
+          });
+        }
+      }
+
+      // Ergebnis: 1 Ausgabe (nur K) oder 2 Ausgaben (K + Lager) oder nur Lager
+      return ausgaben;
+    }
+
+    // ===== Lageplan =====
     const LAYOUT_SHELVES = [
       { id: 1,  row: 0, col: 1 },
       { id: 2,  row: 0, col: 2 },
@@ -560,11 +727,11 @@
 
       { id: 9,  row: 3, col: 2 },
       { id: 8,  row: 3, col: 3 },
-      { id: 10, row: 4, col: 2 },
+      { id:10, row: 4, col: 2 },
       { id: 7,  row: 4, col: 3 },
-      { id: 11, row: 5, col: 2 },
+      { id:11, row: 5, col: 2 },
       { id: 6,  row: 5, col: 3 },
-      { id: 12, row: 6, col: 2 },
+      { id:12, row: 6, col: 2 },
       { id: 5,  row: 6, col: 3 },
 
       { id: 13, row: 7, col: 2.5 },
@@ -577,40 +744,7 @@
       { id: 18, row: 12, col: 3 }
     ];
 
-    // ✅ Nur Zeilen mit Eintrag in "Regal Säge" gelten.
-    function isRowUsable(row) {
-      const regRaw = row["Regal Säge"];
-      let regStr = (regRaw == null ? "" : String(regRaw));
-      regStr = regStr.replace(/\u00A0/g, " ").trim();
-      if (!regStr) return false;
-      if (/^[-–—.]+$/.test(regStr)) return false;
-      return true;
-    }
-
-    // ✅ ROBUST: SAP immer als 10-stellige Ziffern normalisieren (Excel Zahl/Text egal)
-    function normalizeSap10(v) {
-      const digits = String(v ?? "").replace(/\D/g, "");
-      if (!digits) return "";
-      return digits.padStart(10, "0").slice(-10);
-    }
-
-    function materialMatchesButton(mbStr, buttonName) {
-      const lower = String(mbStr).toLowerCase();
-      const bName = String(buttonName).toLowerCase();
-
-      if (bName === "toolox") {
-        return (
-          lower.includes("toolox") ||
-          lower.includes("toolo* 33") ||
-          lower.includes("toolo*33") ||
-          lower.includes("toolo* 44") ||
-          lower.includes("toolo*44")
-        );
-      }
-      return lower.includes(bName);
-    }
-
-    function createLayoutPlan(fieldNumbers) {
+    function createLayoutPlan(fieldNumbers){
       const wrapper = document.createElement("div");
       wrapper.className = "layout-plan-wrapper";
 
@@ -621,17 +755,17 @@
       const cellHeight = "calc(100% / 13)";
 
       let highlights = [];
-      if (Array.isArray(fieldNumbers)) {
-        highlights = fieldNumbers.map(n => Number(n)).filter(n => !isNaN(n));
-      } else if (fieldNumbers != null) {
+      if(Array.isArray(fieldNumbers)){
+        highlights = fieldNumbers.map(n=>Number(n)).filter(n=>!isNaN(n));
+      } else if(fieldNumbers!=null){
         const n = Number(fieldNumbers);
-        if (!isNaN(n)) highlights = [n];
+        if(!isNaN(n)) highlights=[n];
       }
 
-      LAYOUT_SHELVES.forEach(shelf => {
+      LAYOUT_SHELVES.forEach(shelf=>{
         const cell = document.createElement("div");
         cell.className = "layout-plan-cell";
-        if (highlights.includes(shelf.id)) cell.classList.add("active");
+        if(highlights.includes(shelf.id)) cell.classList.add("active");
         cell.textContent = shelf.id;
 
         cell.style.width = cellWidth;
@@ -666,212 +800,24 @@
       return wrapper;
     }
 
-    function updateStatusText() {
-      statusTextEl.textContent = usingExcel
-        ? `Excel-Daten aktiv: ${dataRows.length} Datensätze.`
-        : "Keine Excel-Daten importiert (Demo-Fallback aktiv).";
-    }
-
-    function hasDurchmesser(str) {
-      if (!str) return false;
-      const s = String(str);
-      if (/[Øø⌀]/.test(s)) return true;
-      if (/durchmesser/i.test(s)) return true;
-      return false;
-    }
-
-    function extractFirstDimPair(matBez) {
-      if (!matBez) return null;
-      let s = String(matBez);
-
-      const markerRegex = /toolo\*\s*33|toolo\*\s*44/i;
-      const markerMatch = s.match(markerRegex);
-      if (markerMatch) {
-        const idx = markerMatch.index + markerMatch[0].length;
-        s = s.slice(idx);
-      }
-
-      if (hasDurchmesser(s)) return null;
-
-      const regex = /(\d+(?:[.,]\d+)?)\s*[xX*]\s*(\d+(?:[.,]\d+)?)/;
-      const match = s.match(regex);
-      if (!match) return null;
-
-      const rawA = match[1];
-      const rawB = match[2];
-
-      const numA = parseFloat(rawA.replace(",", "."));
-      const numB = parseFloat(rawB.replace(",", "."));
-      if (isNaN(numA) || isNaN(numB)) return null;
-
-      if (numA <= numB) return { height: numA, width: numB, heightLabel: rawA, widthLabel: rawB };
-      return { height: numB, width: numA, heightLabel: rawB, widthLabel: rawA };
-    }
-
-    function setActiveButton(btn) {
-      document.querySelectorAll(".mat-btn").forEach(b => b.classList.remove("active"));
-      if (btn) btn.classList.add("active");
-    }
-
-    function clearResultArea() {
-      resultArea.innerHTML = "";
-      resultArea.style.display = "none";
-    }
-
-    function buildMaterialButtons() {
-      materialsContainer.innerHTML = "";
-      selectedButton = null;
-      currentPairs = [];
-      currentDims = [];
-      selectedDim1 = null;
-      selectedDim2 = null;
-      dimLabelMap = new Map();
-      dimensionArea.style.display = "none";
-      clearResultArea();
-
-      MATERIAL_BUTTONS.forEach(name => {
-        const btn = document.createElement("button");
-        btn.className = "mat-btn";
-        btn.textContent = name;
-        btn.addEventListener("click", () => onMaterialButtonClick(name, btn));
-        materialsContainer.appendChild(btn);
-      });
-    }
-
-    function onMaterialButtonClick(name, btnElement) {
-      sapError.style.display = "none";
-
-      selectedButton = name;
-      setActiveButton(btnElement);
-
-      currentPairs = [];
-      currentDims = [];
-      dimLabelMap = new Map();
-      const dimSet = new Set();
-
-      dataRows.forEach(row => {
-        if (!isRowUsable(row)) return;
-
-        const mb = row["Materialnummer"];
-        if (!mb) return;
-
-        const mbStr = String(mb);
-        if (!materialMatchesButton(mbStr, name)) return;
-
-        const dims = extractFirstDimPair(mbStr);
-        if (!dims) return;
-
-        currentPairs.push({ row, height: dims.height, width: dims.width });
-        dimSet.add(dims.height);
-        dimSet.add(dims.width);
-
-        if (!dimLabelMap.has(dims.height)) dimLabelMap.set(dims.height, dims.heightLabel);
-        if (!dimLabelMap.has(dims.width))  dimLabelMap.set(dims.width,  dims.widthLabel);
-      });
-
-      currentDims = Array.from(dimSet).sort((a, b) => a - b);
-
-      fillSelect(select1, "Maß 1", currentDims, null);
-      fillSelect(select2, "Maß 2", currentDims, null);
-
-      dimensionArea.style.display = currentDims.length > 0 ? "block" : "none";
-      clearResultArea();
-    }
-
-    function fillSelect(selectEl, placeholderLabel, dims, keepValue) {
-      selectEl.innerHTML = "";
-
-      const ph = document.createElement("option");
-      ph.value = "";
-      ph.textContent = placeholderLabel;
-      selectEl.appendChild(ph);
-
-      dims.forEach(v => {
-        const opt = document.createElement("option");
-        opt.value = String(v);
-        opt.textContent = dimLabelMap.get(v) ?? String(v);
-        selectEl.appendChild(opt);
-      });
-
-      selectEl.value = "";
-    }
-
-    function computeAllowedDims(fixedDim) {
-      if (!fixedDim) return currentDims.slice();
-      const set = new Set();
-      currentPairs.forEach(p => {
-        if (p.height === fixedDim) set.add(p.width);
-        if (p.width  === fixedDim) set.add(p.height);
-      });
-      return Array.from(set).sort((a, b) => a - b);
-    }
-
-    function onSelectChange(fromSelect) {
-      const val1 = select1.value ? Number(select1.value) : null;
-      const val2 = select2.value ? Number(select2.value) : null;
-
-      selectedDim1 = val1;
-      selectedDim2 = val2;
-
-      if (fromSelect === 1) {
-        const allowedFor2 = computeAllowedDims(selectedDim1);
-        fillSelect(select2, "Maß 2", allowedFor2, null);
-      } else if (fromSelect === 2) {
-        const allowedFor1 = computeAllowedDims(selectedDim2);
-        fillSelect(select1, "Maß 1", allowedFor1, null);
-      }
-    }
-
-    function getLagerplatzInfo(row) {
-      const kRaw = row["K"];
-      const regRaw = row["Regal Säge"];
-
-      const kStr = kRaw != null ? String(kRaw).trim().toUpperCase() : "";
-      const regStr = regRaw != null ? String(regRaw).trim() : "";
-
-      if (kStr === "KX" || kStr === "XK") return { number: "K", line1: "Keller, läuft aus", line2: "" };
-      if (kStr === "K") return { number: "K", line1: "Keller", line2: "" };
-      if (kStr === "X") return { number: "", line1: "Läuft aus, kein Lagerplatz vergeben", line2: "" };
-
-      if (/^\d+$/.test(regStr)) return { number: regStr, line1: "Palette", line2: "" };
-
-      const parts = regStr.split(".");
-      const feld = parts[0] || "";
-      const fach = parts[1] || "";
-      const pos  = parts[2] || "";
-
-      return {
-        number: feld ? feld : "X",
-        line1: feld ? (fach ? `Fach ${fach}` : "") : "kein Lagerplatz vergeben",
-        line2: feld ? (pos ? `Pos. ${pos}` : "") : ""
-      };
-    }
-
-    function showOnlyResultMode() {
+    function showOnlyResultMode(){
       searchSection.style.display = "none";
       resultArea.style.display = "flex";
     }
 
-    function createNewSearchButton() {
+    function createNewSearchButton(){
       const btn = document.createElement("button");
       btn.className = "search-btn results-new-search";
       btn.textContent = "Neue Suche";
-      btn.addEventListener("click", () => {
+      btn.addEventListener("click", ()=>{
         searchSection.style.display = "block";
-        buildMaterialButtons();
+        buildMaterialButtonsFromData();
         clearResultArea();
-
-        sapError.style.display = "none";
-        sapSearchInput.value = "790000****";
-        setTimeout(() => {
-          sapSearchInput.focus();
-          sapSearchInput.setSelectionRange(6, 10);
-        }, 0);
       });
       return btn;
     }
 
-    function showResults(rows, dimsDisplayShort) {
+    function showResults(hitRows, dimsDisplayShort){
       resultArea.innerHTML = "";
 
       const wrapper = document.createElement("div");
@@ -882,62 +828,67 @@
 
       const highlightNumbers = [];
 
-      rows.forEach(row => {
-        const matFull = row["Material"] != null ? String(row["Material"]).trim() : "";
+      hitRows.forEach(row=>{
+        const matFull  = trimStr(row[COL.MATERIAL]);
         const matShort = matFull ? matFull.slice(-4) : "----";
 
-        const { number, line1, line2 } = getLagerplatzInfo(row);
-        const nNum = parseInt(number, 10);
-        if (!isNaN(nNum)) highlightNumbers.push(nNum);
+        const ausgaben = buildAusgabenForRow(row);
 
-        const main = document.createElement("div");
-        main.className = "result-main";
+        ausgaben.forEach(a=>{
+          // Lageplan nur bei Lager-Ausgabe (number kann Feld sein)
+          if(a.kind === "LAGER"){
+            const n = parseInt(a.number,10);
+            if(!isNaN(n)) highlightNumbers.push(n);
+          }
 
-        const card = document.createElement("div");
-        card.className = "result-card";
+          const main = document.createElement("div");
+          main.className = "result-main";
 
-        const numBig = document.createElement("div");
-        numBig.className = "result-number-big";
-        numBig.textContent = number != null ? String(number) : "-";
-        card.appendChild(numBig);
+          const card = document.createElement("div");
+          card.className = "result-card";
 
-        const fachDiv = document.createElement("div");
-        fachDiv.className = "result-fach";
-        fachDiv.textContent = line1 || "";
-        card.appendChild(fachDiv);
+          const numBig = document.createElement("div");
+          numBig.className = "result-number-big";
+          numBig.textContent = a.number ?? "-";
+          card.appendChild(numBig);
 
-        if (line2) {
-          const posDiv = document.createElement("div");
-          posDiv.className = "result-fach";
-          posDiv.textContent = line2;
-          card.appendChild(posDiv);
-        }
+          const fachDiv = document.createElement("div");
+          fachDiv.className = "result-fach";
+          fachDiv.textContent = a.line1 || "";
+          card.appendChild(fachDiv);
 
-        const lineDiv = document.createElement("div");
-        lineDiv.className = "result-line";
-        const matName = selectedButton || "SAP";
-        const dimsTxt = dimsDisplayShort || "";
-        lineDiv.textContent = (matName && dimsTxt) ? `${matName} | ${dimsTxt}` : (matName || dimsTxt);
+          if(a.line2){
+            const posDiv = document.createElement("div");
+            posDiv.className = "result-fach";
+            posDiv.textContent = a.line2;
+            card.appendChild(posDiv);
+          }
 
-        const shelf = document.createElement("div");
-        shelf.className = "result-shelf";
+          const lineDiv = document.createElement("div");
+          lineDiv.className = "result-line";
+          const matName = selectedWerkstoff || "";
+          const dimsTxt = dimsDisplayShort || "";
+          lineDiv.textContent = (matName && dimsTxt) ? `${matName} | ${dimsTxt}` : (matName || dimsTxt);
 
-        const shelfInner = document.createElement("div");
-        shelfInner.className = "result-shelf-inner";
-        shelfInner.textContent = matShort || "----";
+          const shelf = document.createElement("div");
+          shelf.className = "result-shelf";
 
-        shelf.appendChild(shelfInner);
+          const shelfInner = document.createElement("div");
+          shelfInner.className = "result-shelf-inner";
+          shelfInner.textContent = matShort || "----";
+          shelf.appendChild(shelfInner);
 
-        const infoDiv = document.createElement("div");
-        infoDiv.className = "result-info";
-        infoDiv.textContent = matFull ? `Material: ${matFull}` : "Kein Material vorhanden";
+          const infoDiv = document.createElement("div");
+          infoDiv.className = "result-info";
+          infoDiv.textContent = matFull ? `Material: ${matFull}` : "Kein Material vorhanden";
 
-        main.appendChild(card);
-        main.appendChild(lineDiv);
-        main.appendChild(shelf);
-        main.appendChild(infoDiv);
+          main.appendChild(card);
+          main.appendChild(lineDiv);
+          main.appendChild(shelf);
+          main.appendChild(infoDiv);
 
-        resultsColumn.appendChild(main);
+          resultsColumn.appendChild(main);
+        });
       });
 
       resultsColumn.appendChild(createNewSearchButton());
@@ -950,7 +901,7 @@
       showOnlyResultMode();
     }
 
-    function showNoResult(dimsDisplayShort, message) {
+    function showNoResult(dimsDisplayShort, message){
       resultArea.innerHTML = "";
 
       const wrapper = document.createElement("div");
@@ -978,7 +929,8 @@
 
       const lineDiv = document.createElement("div");
       lineDiv.className = "result-line";
-      const matName = selectedButton || "SAP";
+
+      const matName = selectedWerkstoff || "";
       const dimsTxt = dimsDisplayShort || "";
       lineDiv.textContent = (matName && dimsTxt) ? `${matName} | ${dimsTxt}` : (matName || dimsTxt || "");
 
@@ -1010,159 +962,125 @@
       showOnlyResultMode();
     }
 
-    function onSearch() {
-      if (!selectedButton) return;
+    function onSearch(){
+      if(!selectedWerkstoff) return;
 
       const v1 = select1.value ? Number(select1.value) : null;
       const v2 = select2.value ? Number(select2.value) : null;
 
-      if (!v1 || !v2) {
+      if(!v1 || !v2){
         showNoResult("", "Bitte zwei Maße wählen.");
         return;
       }
 
-      const d1Label = dimLabelMap.get(v1) ?? String(v1);
-      const d2Label = dimLabelMap.get(v2) ?? String(v2);
-      const dimsDisplayShort = `${d1Label} x ${d2Label}`;
+      const dimsDisplayShort = `${v1} x ${v2}`;
 
-      const matches = [];
-      for (const p of currentPairs) {
-        if ((p.height === v1 && p.width === v2) || (p.height === v2 && p.width === v1)) {
-          matches.push(p.row);
+      const hits = [];
+      for(const p of currentPairs){
+        if((p.a === v1 && p.b === v2) || (p.a === v2 && p.b === v1)){
+          hits.push(p.row);
         }
       }
 
-      if (matches.length > 0) showResults(matches, dimsDisplayShort);
+      if(hits.length) showResults(hits, dimsDisplayShort);
       else showNoResult(dimsDisplayShort, "Material in diesen Abmessungen nicht vorhanden.");
+
+      selectedDim1 = null;
+      selectedDim2 = null;
+      fillSelect(select1, "Maß 1", currentDims, null);
+      fillSelect(select2, "Maß 2", currentDims, null);
     }
 
-    function digitsOnly(str) {
-      return (str || "").replace(/\D/g, "");
+    function normalizeSapInput(raw){
+      if(!raw) return "";
+      const digits = String(raw).replace(/[^\d]/g, "");
+      if(/^\d{4}$/.test(digits)) return "790000" + digits;
+      if(/^\d{10}$/.test(digits)) return digits;
+      return "";
     }
 
-    function runSapSearch() {
-      sapError.style.display = "none";
-
-      const raw = sapSearchInput.value || "";
-      const digits = digitsOnly(raw);
-
-      if (!(digits.length === 4 || digits.length === 10)) {
-        sapError.style.display = "block";
+    function searchBySap(){
+      const norm = normalizeSapInput(sapSearchInput.value);
+      if(!norm){
+        showNoResult("", "10-stellig!");
         return;
       }
 
-      let target = digits;
-      if (digits.length === 4) target = "790000" + digits;
+      const hits = dataRows.filter(r=>{
+        if(!isValidRow(r)) return false;
+        return trimStr(r[COL.MATERIAL]) === norm;
+      });
 
-      selectedButton = null;
-
-      const target10 = normalizeSap10(target);
-
-      const matches = dataRows
-        .filter(isRowUsable)
-        .filter(r => normalizeSap10(r["Material"]) === target10);
-
-      if (matches.length > 0) showResults(matches, target);
-      else showNoResult(target, "Material nicht vorhanden.");
+      if(hits.length){
+        selectedWerkstoff = ""; // Anzeige ohne Werkstoffzeile ok
+        showResults(hits, "");
+      } else {
+        showNoResult("", `Material ${norm} nicht gefunden.`);
+      }
     }
 
-    let sapFirstFocus = true;
-    sapSearchInput.addEventListener("focus", () => {
-      if (sapFirstFocus && sapSearchInput.value === "790000****") {
-        setTimeout(() => sapSearchInput.setSelectionRange(6, 10), 0);
-      }
-      sapFirstFocus = false;
-    });
+    function focusSapStars(){
+      const v = sapSearchInput.value || "";
+      if(v === "790000****") sapSearchInput.setSelectionRange(6, 10);
+    }
 
-    sapSearchBtn.addEventListener("click", runSapSearch);
-    sapSearchInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") runSapSearch();
-    });
+    sapSearchInput.addEventListener("focus", ()=>setTimeout(focusSapStars, 0));
+    sapSearchInput.addEventListener("click", focusSapStars);
+    sapSearchInput.addEventListener("keydown", (e)=>{ if(e.key==="Enter") searchBySap(); });
+    sapSearchBtn.addEventListener("click", searchBySap);
 
-    document.getElementById("excelBtn").addEventListener("click", () => {
+    document.getElementById("excelBtn").addEventListener("click", ()=>{
       document.getElementById("excelInput").click();
     });
 
-    async function tryAutoLoadExcelFromSameFolder() {
-      try {
-        const resp = await fetch("./" + EXCEL_FILENAME, { cache: "no-store" });
-        if (!resp.ok) return false;
-
-        const buf = await resp.arrayBuffer();
-        const workbook = XLSX.read(new Uint8Array(buf), { type: "array" });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const json = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-
-        dataRows = json;
-        usingExcel = true;
-        updateStatusText();
-        buildMaterialButtons();
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(dataRows));
-        return true;
-      } catch (e) {
-        return false;
-      }
-    }
-
-    document.getElementById("excelInput").addEventListener("change", (evt) => {
+    document.getElementById("excelInput").addEventListener("change", (evt)=>{
       const file = evt.target.files[0];
-      if (!file) return;
-
-      if (file.name !== EXCEL_FILENAME) {
-        alert(`Bitte genau diese Datei auswählen:\n${EXCEL_FILENAME}\n\nDu hast gewählt:\n${file.name}`);
-        evt.target.value = "";
-        return;
-      }
+      if(!file) return;
 
       const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
+      reader.onload = (e)=>{
+        try{
           const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: "array" });
+          const workbook = XLSX.read(data, { type:"array" });
           const sheet = workbook.Sheets[workbook.SheetNames[0]];
-          const json = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+          const json  = XLSX.utils.sheet_to_json(sheet, { defval:"" });
 
           dataRows = json;
           usingExcel = true;
-          updateStatusText();
-          buildMaterialButtons();
           localStorage.setItem(STORAGE_KEY, JSON.stringify(dataRows));
-        } catch (err) {
+        } catch(err){
           console.error(err);
-          usingExcel = false;
           dataRows = demoData.slice();
-          updateStatusText();
-          buildMaterialButtons();
+          usingExcel = false;
         }
+
+        updateStatusText();
+        buildMaterialButtonsFromData();
       };
       reader.readAsArrayBuffer(file);
     });
 
-    select1.addEventListener("change", () => onSelectChange(1));
-    select2.addEventListener("change", () => onSelectChange(2));
+    select1.addEventListener("change", ()=>onSelectChange(1));
+    select2.addEventListener("change", ()=>onSelectChange(2));
     document.getElementById("searchBtn").addEventListener("click", onSearch);
 
-    (async function init() {
-      const autoOk = await tryAutoLoadExcelFromSameFolder();
-
-      if (!autoOk) {
-        try {
-          const saved = localStorage.getItem(STORAGE_KEY);
-          if (saved) {
-            dataRows = JSON.parse(saved);
-            usingExcel = true;
-          } else {
-            dataRows = demoData.slice();
-            usingExcel = false;
-          }
-        } catch (e) {
+    (function init(){
+      try{
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if(saved){
+          dataRows = JSON.parse(saved);
+          usingExcel = true;
+        } else {
           dataRows = demoData.slice();
           usingExcel = false;
         }
+      } catch(e){
+        dataRows = demoData.slice();
+        usingExcel = false;
       }
 
       updateStatusText();
-      buildMaterialButtons();
+      buildMaterialButtonsFromData();
     })();
   </script>
 </body>
