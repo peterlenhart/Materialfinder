@@ -499,10 +499,10 @@
 
     let selectedWerkstoff = null;
 
-    let currentPairs = [];   // { row, a, b }
-    let currentDims = [];
-    let selectedDim1 = null;
-    let selectedDim2 = null;
+    let currentPairs = [];   // { row, aKey, bKey, isDiaRow }
+    let currentDims = [];    // [{ key, num, isDia }]
+    let selectedDim1 = null; // key
+    let selectedDim2 = null; // key
 
     const statusTextEl = document.getElementById("statusText");
     const materialsContainer = document.getElementById("materialsContainer");
@@ -520,13 +520,46 @@
       { Keller:"K", Material:"7900000247", Werkstoff:"Toolox", "Maß 1":62, "Maß 2":202, Lagerplatz:"11" },     // 2 Ausgaben: K + Lager
       { Keller:"K", Material:"7900000249", Werkstoff:"Toolox", "Maß 1":51, "Maß 2":147, Lagerplatz:"7.1.1" },  // 2 Ausgaben
       { Keller:"K", Material:"7900000301", Werkstoff:"W300",   "Maß 1":66, "Maß 2":203, Lagerplatz:"" }        // 1 Ausgabe: nur K
+      // Beispiel für Ø/DM (nur zum Test, kannst du löschen):
+      // { Keller:"K", Material:"7900000999", Werkstoff:"Rundstahl", "Maß 1":"DM30", "Maß 2":"", Lagerplatz:"12" }
     ];
 
     function trimStr(v){ return v==null ? "" : String(v).trim(); }
-    function toNumber(v){
-      const s = trimStr(v).replace(",", ".");
-      const n = parseFloat(s);
-      return isNaN(n) ? null : n;
+
+    // ===== NEU: DM/Ø Erkennung + Zahl extrahieren =====
+    function parseDimCell(raw){
+      const t = trimStr(raw);
+      if(!t) return { num: null, isDia: false, raw: t };
+
+      const lower = t.toLowerCase();
+
+      // Durchmesser: dm / Ø / ⌀ (groß/klein egal)
+      const hasDiaSymbol = /[øØ⌀]/.test(t);
+      const hasDM = /\bdm\b/.test(lower) || /^dm/.test(lower);
+      const isDia = hasDiaSymbol || hasDM;
+
+      // Zahl extrahieren (30, 30.5, 30,5 etc.)
+      const m = t.match(/-?\d+(?:[.,]\d+)?/);
+      if(!m) return { num: null, isDia, raw: t };
+
+      const n = parseFloat(m[0].replace(",", "."));
+      return { num: isNaN(n) ? null : n, isDia, raw: t };
+    }
+
+    function dimKey(num, isDia){
+      return (isDia ? "D:" : "N:") + String(num);
+    }
+    function parseDimKey(key){
+      const s = String(key || "");
+      const isDia = s.startsWith("D:");
+      const numStr = s.slice(2);
+      const num = parseFloat(String(numStr).replace(",", "."));
+      return { num: isNaN(num) ? null : num, isDia };
+    }
+    function dimLabelFromKey(key){
+      const p = parseDimKey(key);
+      if(p.num == null) return "";
+      return (p.isDia ? "Ø " : "") + String(p.num);
     }
 
     function updateStatusText(){
@@ -538,9 +571,20 @@
     // gültig, wenn Werkstoff+Maße da sind UND mind. 1 Ort (Keller K oder Lagerplatz)
     function isValidRow(row){
       const w = trimStr(row[COL.WERKSTOFF]);
-      const a = toNumber(row[COL.M1]);
-      const b = toNumber(row[COL.M2]);
-      if(!w || a==null || b==null) return false;
+
+      const p1 = parseDimCell(row[COL.M1]);
+      const p2 = parseDimCell(row[COL.M2]);
+
+      // Bei Ø/DM darf eine der beiden Spalten leer sein -> dann reicht eine Zahl
+      const isDiaRow = (p1.isDia || p2.isDia);
+
+      if(!w) return false;
+
+      if(isDiaRow){
+        if(p1.num == null && p2.num == null) return false; // mindestens ein Ø-Maß vorhanden
+      } else {
+        if(p1.num == null || p2.num == null) return false; // normal: beide Maße müssen da sein
+      }
 
       const k = trimStr(row[COL.KELLER]).toUpperCase();
       const lp = trimStr(row[COL.LAGER]);
@@ -555,10 +599,22 @@
       return Array.from(s).sort((a,b)=>a.localeCompare(b,"de"));
     }
 
-    function uniqueSortedNumeric(arr){
-      const s = new Set();
-      arr.forEach(v => { if(typeof v === "number") s.add(v); });
-      return Array.from(s).sort((a,b)=>a-b);
+    // NEU: sort für Dim-Objekte
+    function uniqueSortedDims(dimObjs){
+      const m = new Map();
+      dimObjs.forEach(d=>{
+        if(!d || !d.key) return;
+        if(!m.has(d.key)) m.set(d.key, d);
+      });
+
+      const arr = Array.from(m.values());
+      arr.sort((a,b)=>{
+        if(a.num !== b.num) return a.num - b.num;
+        // bei gleicher Zahl: Ø zuerst (damit es auffällt)
+        if(a.isDia !== b.isDia) return (a.isDia ? -1 : 1);
+        return 0;
+      });
+      return arr;
     }
 
     function setActiveButton(btn){
@@ -606,15 +662,29 @@
         if(!isValidRow(row)) return;
         if(trimStr(row[COL.WERKSTOFF]) !== name) return;
 
-        const a = toNumber(row[COL.M1]);
-        const b = toNumber(row[COL.M2]);
-        if(a==null || b==null) return;
+        const p1 = parseDimCell(row[COL.M1]);
+        const p2 = parseDimCell(row[COL.M2]);
 
-        currentPairs.push({ row, a, b });
-        dims.push(a, b);
+        const isDiaRow = (p1.isDia || p2.isDia);
+
+        // Wenn Ø/DM in einer Spalte vorkommt -> beide Dropdowns sollen Ø anzeigen
+        const aNum = p1.num;
+        const bNum = p2.num;
+
+        // Für Ø-Reihen kann eine Seite leer sein:
+        // wir speichern trotzdem beide Keys, aber nur wenn num vorhanden.
+        const aKey = (aNum!=null) ? dimKey(aNum, isDiaRow ? true : p1.isDia) : null;
+        const bKey = (bNum!=null) ? dimKey(bNum, isDiaRow ? true : p2.isDia) : null;
+
+        // Für die Auswahllisten sammeln wir alles, was vorhanden ist
+        if(aKey) dims.push({ key:aKey, num:aNum, isDia: isDiaRow ? true : p1.isDia });
+        if(bKey) dims.push({ key:bKey, num:bNum, isDia: isDiaRow ? true : p2.isDia });
+
+        // Paar speichern (auch wenn eine Seite fehlt, wichtig für Ø-Einzelwahl)
+        currentPairs.push({ row, aKey, bKey, isDiaRow });
       });
 
-      currentDims = uniqueSortedNumeric(dims);
+      currentDims = uniqueSortedDims(dims);
       selectedDim1 = null;
       selectedDim2 = null;
 
@@ -625,48 +695,59 @@
       clearResultArea();
     }
 
-    function fillSelect(sel, placeholder, dims, keep){
+    function fillSelect(sel, placeholder, dims, keepKey){
       sel.innerHTML = "";
       const ph = document.createElement("option");
       ph.value = "";
       ph.textContent = placeholder;
       sel.appendChild(ph);
 
-      dims.forEach(v=>{
+      dims.forEach(d=>{
         const opt = document.createElement("option");
-        opt.value = String(v);
-        opt.textContent = Number.isInteger(v) ? String(v) : String(v);
+        opt.value = d.key;
+        opt.textContent = (d.isDia ? "Ø " : "") + String(d.num);
         sel.appendChild(opt);
       });
 
-      sel.value = (keep!=null && dims.includes(keep)) ? String(keep) : "";
+      sel.value = (keepKey && dims.some(d=>d.key===keepKey)) ? keepKey : "";
     }
 
-    function computeAllowedDims(fixedDim){
-      if(!fixedDim) return currentDims.slice();
-      const set = new Set();
+    function computeAllowedDims(fixedKey){
+      if(!fixedKey) return currentDims.slice();
+
+      const allowedKeys = new Set();
+
       currentPairs.forEach(p=>{
-        if(p.a === fixedDim) set.add(p.b);
-        if(p.b === fixedDim) set.add(p.a);
+        if(!p.aKey && !p.bKey) return;
+
+        if(p.aKey === fixedKey && p.bKey) allowedKeys.add(p.bKey);
+        if(p.bKey === fixedKey && p.aKey) allowedKeys.add(p.aKey);
+
+        // Ø/DM Sonderfall: Einzelmaß soll suchbar sein -> wir lassen das Dropdown NICHT leerfiltern,
+        // sondern erlauben weiterhin alle Ø-Werte. (Sonst wird es "zäh".)
       });
-      return Array.from(set).sort((a,b)=>a-b);
+
+      // Wenn nichts gefunden: fallback = alle
+      if(allowedKeys.size === 0) return currentDims.slice();
+
+      return currentDims.filter(d=>allowedKeys.has(d.key));
     }
 
     function onSelectChange(from){
-      const v1 = select1.value ? Number(select1.value) : null;
-      const v2 = select2.value ? Number(select2.value) : null;
+      const v1 = select1.value ? String(select1.value) : null;
+      const v2 = select2.value ? String(select2.value) : null;
 
       selectedDim1 = v1;
       selectedDim2 = v2;
 
       if(from===1){
         const allowed2 = computeAllowedDims(selectedDim1);
-        const keep = allowed2.includes(selectedDim2) ? selectedDim2 : null;
+        const keep = allowed2.some(d=>d.key===selectedDim2) ? selectedDim2 : null;
         if(!keep) selectedDim2 = null;
         fillSelect(select2, "Maß 2", allowed2, keep);
       } else {
         const allowed1 = computeAllowedDims(selectedDim2);
-        const keep = allowed1.includes(selectedDim1) ? selectedDim1 : null;
+        const keep = allowed1.some(d=>d.key===selectedDim1) ? selectedDim1 : null;
         if(!keep) selectedDim1 = null;
         fillSelect(select1, "Maß 1", allowed1, keep);
       }
@@ -777,311 +858,4 @@
       });
 
       const frameTop = document.createElement("div");
-      frameTop.className = "layout-plan-frame layout-plan-frame-top";
-      plan.appendChild(frameTop);
-
-      const frameMiddle = document.createElement("div");
-      frameMiddle.className = "layout-plan-frame layout-plan-frame-middle";
-      plan.appendChild(frameMiddle);
-
-      const frameBottom = document.createElement("div");
-      frameBottom.className = "layout-plan-frame layout-plan-frame-bottom";
-      plan.appendChild(frameBottom);
-
-      const breakTop = document.createElement("div");
-      breakTop.className = "layout-plan-break layout-plan-break-top";
-      plan.appendChild(breakTop);
-
-      const stand = document.createElement("div");
-      stand.className = "layout-plan-standpoint";
-      plan.appendChild(stand);
-
-      wrapper.appendChild(plan);
-      return wrapper;
-    }
-
-    function showOnlyResultMode(){
-      searchSection.style.display = "none";
-      resultArea.style.display = "flex";
-    }
-
-    function createNewSearchButton(){
-      const btn = document.createElement("button");
-      btn.className = "search-btn results-new-search";
-      btn.textContent = "Neue Suche";
-      btn.addEventListener("click", ()=>{
-        searchSection.style.display = "block";
-        buildMaterialButtonsFromData();
-        clearResultArea();
-      });
-      return btn;
-    }
-
-    function showResults(hitRows, dimsDisplayShort){
-      resultArea.innerHTML = "";
-
-      const wrapper = document.createElement("div");
-      wrapper.className = "result-wrapper";
-
-      const resultsColumn = document.createElement("div");
-      resultsColumn.className = "results-column";
-
-      const highlightNumbers = [];
-
-      hitRows.forEach(row=>{
-        const matFull  = trimStr(row[COL.MATERIAL]);
-        const matShort = matFull ? matFull.slice(-4) : "----";
-
-        const ausgaben = buildAusgabenForRow(row);
-
-        ausgaben.forEach(a=>{
-          // Lageplan nur bei Lager-Ausgabe (number kann Feld sein)
-          if(a.kind === "LAGER"){
-            const n = parseInt(a.number,10);
-            if(!isNaN(n)) highlightNumbers.push(n);
-          }
-
-          const main = document.createElement("div");
-          main.className = "result-main";
-
-          const card = document.createElement("div");
-          card.className = "result-card";
-
-          const numBig = document.createElement("div");
-          numBig.className = "result-number-big";
-          numBig.textContent = a.number ?? "-";
-          card.appendChild(numBig);
-
-          const fachDiv = document.createElement("div");
-          fachDiv.className = "result-fach";
-          fachDiv.textContent = a.line1 || "";
-          card.appendChild(fachDiv);
-
-          if(a.line2){
-            const posDiv = document.createElement("div");
-            posDiv.className = "result-fach";
-            posDiv.textContent = a.line2;
-            card.appendChild(posDiv);
-          }
-
-          const lineDiv = document.createElement("div");
-          lineDiv.className = "result-line";
-          const matName = selectedWerkstoff || "";
-          const dimsTxt = dimsDisplayShort || "";
-          lineDiv.textContent = (matName && dimsTxt) ? `${matName} | ${dimsTxt}` : (matName || dimsTxt);
-
-          const shelf = document.createElement("div");
-          shelf.className = "result-shelf";
-
-          const shelfInner = document.createElement("div");
-          shelfInner.className = "result-shelf-inner";
-          shelfInner.textContent = matShort || "----";
-          shelf.appendChild(shelfInner);
-
-          const infoDiv = document.createElement("div");
-          infoDiv.className = "result-info";
-          infoDiv.textContent = matFull ? `Material: ${matFull}` : "Kein Material vorhanden";
-
-          main.appendChild(card);
-          main.appendChild(lineDiv);
-          main.appendChild(shelf);
-          main.appendChild(infoDiv);
-
-          resultsColumn.appendChild(main);
-        });
-      });
-
-      resultsColumn.appendChild(createNewSearchButton());
-      wrapper.appendChild(resultsColumn);
-
-      const planWrapper = createLayoutPlan(highlightNumbers);
-      wrapper.appendChild(planWrapper);
-
-      resultArea.appendChild(wrapper);
-      showOnlyResultMode();
-    }
-
-    function showNoResult(dimsDisplayShort, message){
-      resultArea.innerHTML = "";
-
-      const wrapper = document.createElement("div");
-      wrapper.className = "result-wrapper";
-
-      const resultsColumn = document.createElement("div");
-      resultsColumn.className = "results-column";
-
-      const main = document.createElement("div");
-      main.className = "result-main";
-
-      const card = document.createElement("div");
-      card.className = "result-card";
-
-      const numBig = document.createElement("div");
-      numBig.className = "result-number-big";
-      numBig.textContent = "-";
-
-      const fachDiv = document.createElement("div");
-      fachDiv.className = "result-fach";
-      fachDiv.textContent = "Material nicht vorhanden";
-
-      card.appendChild(numBig);
-      card.appendChild(fachDiv);
-
-      const lineDiv = document.createElement("div");
-      lineDiv.className = "result-line";
-
-      const matName = selectedWerkstoff || "";
-      const dimsTxt = dimsDisplayShort || "";
-      lineDiv.textContent = (matName && dimsTxt) ? `${matName} | ${dimsTxt}` : (matName || dimsTxt || "");
-
-      const shelf = document.createElement("div");
-      shelf.className = "result-shelf";
-
-      const shelfInner = document.createElement("div");
-      shelfInner.className = "result-shelf-inner";
-      shelfInner.textContent = "----";
-      shelf.appendChild(shelfInner);
-
-      const infoDiv = document.createElement("div");
-      infoDiv.className = "result-info";
-      infoDiv.textContent = message || "";
-
-      main.appendChild(card);
-      main.appendChild(lineDiv);
-      main.appendChild(shelf);
-      main.appendChild(infoDiv);
-
-      resultsColumn.appendChild(main);
-      resultsColumn.appendChild(createNewSearchButton());
-      wrapper.appendChild(resultsColumn);
-
-      const planWrapper = createLayoutPlan(null);
-      wrapper.appendChild(planWrapper);
-
-      resultArea.appendChild(wrapper);
-      showOnlyResultMode();
-    }
-
-    function onSearch(){
-      if(!selectedWerkstoff) return;
-
-      const v1 = select1.value ? Number(select1.value) : null;
-      const v2 = select2.value ? Number(select2.value) : null;
-
-      if(!v1 || !v2){
-        showNoResult("", "Bitte zwei Maße wählen.");
-        return;
-      }
-
-      const dimsDisplayShort = `${v1} x ${v2}`;
-
-      const hits = [];
-      for(const p of currentPairs){
-        if((p.a === v1 && p.b === v2) || (p.a === v2 && p.b === v1)){
-          hits.push(p.row);
-        }
-      }
-
-      if(hits.length) showResults(hits, dimsDisplayShort);
-      else showNoResult(dimsDisplayShort, "Material in diesen Abmessungen nicht vorhanden.");
-
-      selectedDim1 = null;
-      selectedDim2 = null;
-      fillSelect(select1, "Maß 1", currentDims, null);
-      fillSelect(select2, "Maß 2", currentDims, null);
-    }
-
-    function normalizeSapInput(raw){
-      if(!raw) return "";
-      const digits = String(raw).replace(/[^\d]/g, "");
-      if(/^\d{4}$/.test(digits)) return "790000" + digits;
-      if(/^\d{10}$/.test(digits)) return digits;
-      return "";
-    }
-
-    function searchBySap(){
-      const norm = normalizeSapInput(sapSearchInput.value);
-      if(!norm){
-        showNoResult("", "10-stellig!");
-        return;
-      }
-
-      const hits = dataRows.filter(r=>{
-        if(!isValidRow(r)) return false;
-        return trimStr(r[COL.MATERIAL]) === norm;
-      });
-
-      if(hits.length){
-        selectedWerkstoff = ""; // Anzeige ohne Werkstoffzeile ok
-        showResults(hits, "");
-      } else {
-        showNoResult("", `Material ${norm} nicht gefunden.`);
-      }
-    }
-
-    function focusSapStars(){
-      const v = sapSearchInput.value || "";
-      if(v === "790000****") sapSearchInput.setSelectionRange(6, 10);
-    }
-
-    sapSearchInput.addEventListener("focus", ()=>setTimeout(focusSapStars, 0));
-    sapSearchInput.addEventListener("click", focusSapStars);
-    sapSearchInput.addEventListener("keydown", (e)=>{ if(e.key==="Enter") searchBySap(); });
-    sapSearchBtn.addEventListener("click", searchBySap);
-
-    document.getElementById("excelBtn").addEventListener("click", ()=>{
-      document.getElementById("excelInput").click();
-    });
-
-    document.getElementById("excelInput").addEventListener("change", (evt)=>{
-      const file = evt.target.files[0];
-      if(!file) return;
-
-      const reader = new FileReader();
-      reader.onload = (e)=>{
-        try{
-          const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type:"array" });
-          const sheet = workbook.Sheets[workbook.SheetNames[0]];
-          const json  = XLSX.utils.sheet_to_json(sheet, { defval:"" });
-
-          dataRows = json;
-          usingExcel = true;
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(dataRows));
-        } catch(err){
-          console.error(err);
-          dataRows = demoData.slice();
-          usingExcel = false;
-        }
-
-        updateStatusText();
-        buildMaterialButtonsFromData();
-      };
-      reader.readAsArrayBuffer(file);
-    });
-
-    select1.addEventListener("change", ()=>onSelectChange(1));
-    select2.addEventListener("change", ()=>onSelectChange(2));
-    document.getElementById("searchBtn").addEventListener("click", onSearch);
-
-    (function init(){
-      try{
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if(saved){
-          dataRows = JSON.parse(saved);
-          usingExcel = true;
-        } else {
-          dataRows = demoData.slice();
-          usingExcel = false;
-        }
-      } catch(e){
-        dataRows = demoData.slice();
-        usingExcel = false;
-      }
-
-      updateStatusText();
-      buildMaterialButtonsFromData();
-    })();
-  </script>
-</body>
-</html>
+      frameTop.className = "
